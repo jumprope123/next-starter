@@ -1,0 +1,88 @@
+/*
+ * iOS notch / 안드로이드 네비게이션 바를 피해 안전 영역(safe-area-inset-*) 만큼
+ * margin / padding 을 자동으로 채워 주는 Tailwind 4 유틸리티들.
+ *
+ * 사용 예: <header className="pt-safe pb-safe">  → padding-top/bottom 에 safe-area inset 추가
+ *         <main className="min-h-safe">          → 안전 영역만 잘라낸 viewport 높이 보장
+ *
+ * 더 자세한 문서: https://developer.mozilla.org/en-US/docs/Web/CSS/env
+ */
+
+@utility m-safe {
+  margin: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+@utility mx-safe {
+  margin-right: env(safe-area-inset-right);
+  margin-left: env(safe-area-inset-left);
+}
+@utility my-safe {
+  margin-top: env(safe-area-inset-top);
+  margin-bottom: env(safe-area-inset-bottom);
+}
+@utility mt-safe {
+  margin-top: env(safe-area-inset-top);
+}
+@utility mr-safe {
+  margin-right: env(safe-area-inset-right);
+}
+@utility mb-safe {
+  margin-bottom: env(safe-area-inset-bottom);
+}
+@utility ml-safe {
+  margin-left: env(safe-area-inset-left);
+}
+
+@utility p-safe {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+@utility px-safe {
+  padding-right: env(safe-area-inset-right);
+  padding-left: env(safe-area-inset-left);
+}
+@utility py-safe {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@utility pr-safe {
+  padding-right: env(safe-area-inset-right);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pl-safe {
+  padding-left: env(safe-area-inset-left);
+}
+
+@utility inset-safe {
+  top: env(safe-area-inset-top);
+  right: env(safe-area-inset-right);
+  bottom: env(safe-area-inset-bottom);
+  left: env(safe-area-inset-left);
+}
+@utility top-safe {
+  top: env(safe-area-inset-top);
+}
+@utility right-safe {
+  right: env(safe-area-inset-right);
+}
+@utility bottom-safe {
+  bottom: env(safe-area-inset-bottom);
+}
+@utility left-safe {
+  left: env(safe-area-inset-left);
+}
+
+/* viewport 에서 safe-area 만큼을 제외한 가용 높이. 가로 모드/PWA 에서 유용. */
+/*noinspection CssOverwrittenProperties*/
+@utility min-h-safe {
+  min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  min-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+/*noinspection CssOverwrittenProperties*/
+@utility h-safe {
+  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}

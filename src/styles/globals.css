@@ -1,0 +1,24 @@
+@import 'tailwindcss';
+@import './colors.css';
+@import './fonts.css';
+@import './gsap.css';
+@import './layout.css';
+@import './safe-area.css';
+@import './utility.css';
+@import './variables.css';
+
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+.flex-1 {
+  min-width: 0;
+}

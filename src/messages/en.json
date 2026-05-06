@@ -1,0 +1,11 @@
+{
+  "common.notFound.title": "Page not found",
+  "common.notFound.description": "The address may be wrong, or this page no longer exists.",
+  "common.notFound.cta": "Go to home",
+  "common.error.title": "Something went wrong",
+  "common.error.retry": "Try again",
+  "template.title": "Next Single Template",
+  "template.description": "Starter template with i18n / proxy / tailwind / react-query / zustand pre-configured.",
+  "template.i18n": "Language switch test",
+  "template.playground": "State / Data / Form Playground"
+}
