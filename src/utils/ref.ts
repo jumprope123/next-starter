@@ -1,4 +1,4 @@
-import { MutableRefObject, Ref } from 'react';
+import { Ref, RefObject } from 'react';
 
 /**
  * 여러 개의 React `Ref` 를 하나로 합쳐 단일 ref 콜백을 반환한다.
@@ -19,7 +19,7 @@ export const mergeRefs = <T>(...refs: (Ref<T> | undefined)[]): Ref<T> => {
       if (typeof ref === 'function') {
         ref(element);
       } else if (ref && 'current' in ref) {
-        (ref as MutableRefObject<T | null>).current = element;
+        (ref as RefObject<T | null>).current = element;
       }
     });
   };

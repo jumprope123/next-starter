@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import queryString from 'query-string';
 
 /**
@@ -12,7 +10,7 @@ import queryString from 'query-string';
  * @param value 검사할 쿼리 값
  * @returns 유효한 값이면 `true`
  */
-export const isValidQuery = (value: any): boolean =>
+export const isValidQuery = (value: string | string[] | undefined | null): boolean =>
   value !== undefined && value !== null && value !== 'undefined' && value !== 'null' && value.length > 0;
 
 /**

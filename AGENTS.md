@@ -112,7 +112,6 @@ alias: `@/*` → `./src/*`, `#/*` → `./public/*`
 | `promise` | `getFulfilledResults`, `getRejectedResults`, `sleep`, `withTimeout`, `retry` |
 | `query` | `isValidQuery`, `addToQuery`, `removeFromQuery`, `createHrefQuery` |
 | `ref` | `mergeRefs` |
-| `scroll` | `scroll.lock()`, `scroll.unlock()` |
 | `storage` | `storage` (localStorage), `sessionStorage` (둘 다 SSR-safe + JSON 자동 직렬화) |
 | `type` | `assertNever`, `isObject`, `isNotNullish` |
 

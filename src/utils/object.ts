@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import { ComponentProps } from 'react';
+import { ComponentType } from 'react';
 
 /**
  * 객체에서 지정한 키들만 골라 새 객체를 만든다.
@@ -11,7 +9,7 @@ import { ComponentProps } from 'react';
  * @example
  * pick({ a: 1, b: 2, c: 3 }, ['a', 'c']); // → { a: 1, c: 3 }
  */
-export const pick = <T extends Record<string, any>, K extends keyof T>(obj: T, keys: readonly K[]): Pick<T, K> => {
+export const pick = <T extends Record<string, unknown>, K extends keyof T>(obj: T, keys: readonly K[]): Pick<T, K> => {
   const result = {} as Pick<T, K>;
   for (const key of keys) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -30,7 +28,7 @@ export const pick = <T extends Record<string, any>, K extends keyof T>(obj: T, k
  * @example
  * omit({ a: 1, b: 2, c: 3 }, ['b']); // → { a: 1, c: 3 }
  */
-export const omit = <T extends Record<string, any>, K extends keyof T>(obj: T, keys: readonly K[]): Omit<T, K> => {
+export const omit = <T extends Record<string, unknown>, K extends keyof T>(obj: T, keys: readonly K[]): Omit<T, K> => {
   const result = { ...obj };
   for (const key of keys) {
     delete result[key];
@@ -44,7 +42,7 @@ export const omit = <T extends Record<string, any>, K extends keyof T>(obj: T, k
  * `null` 은 제거하지 않으므로, "값이 명시적으로 비어 있다" 와 "키가 아예 없다" 를 구분해야 하는
  * API 호출 / URLSearchParams 직렬화 등에 사용한다.
  */
-export const removeUndefined = <T extends Record<string, any>>(obj: T): Partial<T> => {
+export const removeUndefined = <T extends Record<string, unknown>>(obj: T): Partial<T> => {
   const result: Partial<T> = {};
   for (const key in obj) {
     if (obj[key] !== undefined) {
@@ -62,7 +60,7 @@ export const removeUndefined = <T extends Record<string, any>>(obj: T): Partial<
  *
  * @returns 모든 키와 값이 일치하면 `true`
  */
-export const compareAllKeys = <T extends Record<string, any>>(obj1: T, obj2: T): boolean => {
+export const compareAllKeys = <T extends Record<string, unknown>>(obj1: T, obj2: T): boolean => {
   const keys1 = Object.keys(obj1);
   const keys2 = Object.keys(obj2);
 
@@ -91,7 +89,7 @@ export const compareAllKeys = <T extends Record<string, any>>(obj1: T, obj2: T):
  * 모든 값이 위 조건을 통과해야만 `true` 를 반환한다. 객체 자체에 키가 없으면 `false`.
  * 폼 제출 가능 여부 같은 검사에 사용한다.
  */
-export const hasAllValues = <T extends Record<string, any>>(obj: T): boolean => {
+export const hasAllValues = <T extends Record<string, unknown>>(obj: T): boolean => {
   if (!Object.values(obj).length) {
     return false;
   }
@@ -129,7 +127,7 @@ export const hasAllValues = <T extends Record<string, any>>(obj: T): boolean => 
  * export default withSubComponents(Card, { Header });
  * // → <Card.Header />
  */
-export const withSubComponents = <T extends ComponentProps<any>, Sub extends Record<string, unknown>>(
+export const withSubComponents = <T extends ComponentType<never>, Sub extends Record<string, unknown>>(
   component: T,
   subComponents: Sub
 ) => {

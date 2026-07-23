@@ -18,4 +18,3 @@ export * from './query';
 export * from './ref';
 export * from './storage';
 export * from './type';
-export { default as scroll } from './scroll';

@@ -81,7 +81,7 @@ src/
 ├── stores/             zustand store (media, mobile, settings — session/local persist)
 ├── styles/             전역 CSS (globals, variables, colors, fonts, layout, utility, gsap)
 ├── types/              전역 타입 / 환경 변수 선언
-└── utils/              순수 유틸리티 (array, format, query, scroll, storage, clipboard, download, env, number, type, ...)
+└── utils/              순수 유틸리티 (array, format, query, storage, clipboard, download, env, number, type, ...)
 
 public/
 ├── fonts/              Pretendard Variable woff2
@@ -157,7 +157,6 @@ public/
 | `promise` | `getFulfilledResults`, `getRejectedResults`, `sleep`, `withTimeout`, `retry` |
 | `query` | `isValidQuery`, `addToQuery`, `removeFromQuery`, `createHrefQuery` |
 | `ref` | `mergeRefs` |
-| `scroll` | `scroll.lock()`, `scroll.unlock()` |
 | `storage` | `storage` (localStorage), `sessionStorage` (둘 다 SSR-safe + JSON 자동 직렬화) |
 | `type` | `assertNever`, `isObject`, `isNotNullish` |
 
