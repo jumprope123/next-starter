@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { ROUTE_PATHS } from '@/constants';
-import { locales } from '@/i18n/routing';
+import { defaultLocale, locales } from '@/i18n/routing';
 
 /**
  * Sitemap 엔트리.
@@ -17,7 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return Object.values(ROUTE_PATHS).flatMap((path) =>
     locales.map((locale) => {
-      const isDefault = locale === 'ko';
+      const isDefault = locale === defaultLocale;
       const url = `${base}${isDefault ? '' : `/${locale}`}${path === '/' ? '' : path}`;
       return {
         url: url || base,

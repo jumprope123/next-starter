@@ -64,7 +64,7 @@ export const filterDuplicateItem = <T extends { [key: string]: unknown }>({
   key,
 }: {
   items: T[];
-  key: string;
+  key: keyof T;
 }) => {
   const uniqueKeys = new Map();
   return items.filter((v) => !uniqueKeys.has(v[key]) && uniqueKeys.set(v[key], true));
@@ -79,4 +79,4 @@ export const filterDuplicateItem = <T extends { [key: string]: unknown }>({
  * @param data 복사할 배열 (`null` / `undefined` 인 경우 빈 배열로 처리)
  * @returns 입력과 동일한 형태의 새 배열
  */
-export const deepCopy = <T extends unknown[]>(data: T): T => JSON.parse(JSON.stringify(data ?? '[]'));
+export const deepCopy = <T extends unknown[]>(data: T): T => JSON.parse(JSON.stringify(data ?? []));

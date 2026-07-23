@@ -41,7 +41,7 @@ export function useFocusScroll({ focusedRef, parentRef, scrollOffset = 0, initia
 
         parentRef.current.scrollTo({
           left: targetOffset,
-          behavior: (behavior ?? moveOffset > document.documentElement.clientWidth) ? 'instant' : 'smooth',
+          behavior: behavior ?? (moveOffset > document.documentElement.clientWidth ? 'instant' : 'smooth'),
         });
       }
     },

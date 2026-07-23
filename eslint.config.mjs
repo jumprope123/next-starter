@@ -15,7 +15,8 @@ const eslintConfig = defineConfig([
   ]),
   {
     rules: {
-      'no-console': 'warn',
+      // `compiler.removeConsole` 이 production 에서 `error` 만 남기므로, lint 도 같은 기준을 따른다.
+      'no-console': ['warn', { allow: ['error'] }],
     },
   },
 ]);

@@ -32,7 +32,10 @@ export function useContainer() {
     }
   }, []);
 
-  const [overflowPadding, setOverflowPadding] = useState<number>(calculateOverflowPadding);
+  // SSR 중에는 document 가 없으므로 0 으로 시작하고, 클라이언트에서만 초기값을 계산한다.
+  const [overflowPadding, setOverflowPadding] = useState<number>(() =>
+    typeof document === 'undefined' ? 0 : calculateOverflowPadding()
+  );
   const { lg } = useMedia();
   const padding: Property.Padding = useMemo(
     () => (lg ? `0 calc(32px + ${overflowPadding}px)` : `0 20px`),

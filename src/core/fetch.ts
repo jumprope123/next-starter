@@ -32,7 +32,19 @@ export class ApiError extends Error {
   readonly data: unknown;
   readonly url: string;
 
-  constructor({ status, body, data, url, message }: { status: number; body: string; data: unknown; url: string; message?: string }) {
+  constructor({
+    status,
+    body,
+    data,
+    url,
+    message,
+  }: {
+    status: number;
+    body: string;
+    data: unknown;
+    url: string;
+    message?: string;
+  }) {
     super(message ?? body ?? `API request failed (${status})`);
     this.name = 'ApiError';
     this.status = status;
@@ -89,17 +101,18 @@ export const fetchExtended = returnFetch({
  * const { data } = await fetcher<PingResponse>('/api/ping');
  * const { data } = await fetcher<UserDto>('/users/me', { auth: 'required' });
  */
-export const fetcher = async <T>(
-  url: URL | RequestInfo,
-  init?: (RequestInit & { auth?: FetcherAuth }) | undefined
-) => {
+export const fetcher = async <T>(url: URL | RequestInfo, init?: (RequestInit & { auth?: FetcherAuth }) | undefined) => {
   const { auth = false, ...options } = { ...init };
   const requestUrl = getRequestUrl({ url, auth });
   const headers = new Headers(options.headers ?? undefined);
   if (!headers.has('Accept')) headers.set('Accept', 'application/json');
 
   const response = await fetchExtended(requestUrl, { ...options, headers } as FetchArgs[1]);
-  const data = (await response.clone().json()) as T;
+  // 204 No Content 처럼 본문이 없거나 JSON 이 아닌 성공 응답에서는 파싱 에러 대신 null 을 돌려준다.
+  const data = (await response
+    .clone()
+    .json()
+    .catch(() => null)) as T;
 
   return { response, data };
 };

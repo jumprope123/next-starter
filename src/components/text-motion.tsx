@@ -74,6 +74,17 @@ export function TextMotion({
   const hasCompletedRef = useRef<boolean>(false);
   const currentText = texts[index];
 
+  // 부모가 인라인 배열/콜백을 넘겨도 인터벌이 매 렌더 리셋되지 않도록, 최신 값을 ref 로 고정한다.
+  const textsLengthRef = useRef<number>(texts.length);
+  const onCompleteActionRef = useRef<Props['onCompleteAction']>(onCompleteAction);
+  const onChangeIndexActionRef = useRef<Props['onChangeIndexAction']>(onChangeIndexAction);
+
+  useEffect(() => {
+    textsLengthRef.current = texts.length;
+    onCompleteActionRef.current = onCompleteAction;
+    onChangeIndexActionRef.current = onChangeIndexAction;
+  });
+
   const reverseDirection = (dir: Direction): Direction => {
     switch (dir) {
       case 'up':
@@ -113,11 +124,11 @@ export function TextMotion({
       setIndex((prev) => {
         const next = prev + 1;
 
-        if (next >= texts.length) {
+        if (next >= textsLengthRef.current) {
           if (playOnce) {
             clearInterval(timer);
             hasCompletedRef.current = true;
-            onCompleteAction?.();
+            onCompleteActionRef.current?.();
             return prev; // 마지막 index로 멈춤
           }
           return 0;
@@ -128,7 +139,7 @@ export function TextMotion({
     }, interval);
 
     return () => clearInterval(timer);
-  }, [texts, interval, playOnce, onCompleteAction]);
+  }, [interval, playOnce]);
 
   useEffect(() => {
     if (textRef.current) {
@@ -148,7 +159,7 @@ export function TextMotion({
     }
   }, [index]);
 
-  useEffect(() => onChangeIndexAction?.(index), [index, onChangeIndexAction]);
+  useEffect(() => onChangeIndexActionRef.current?.(index), [index]);
 
   return (
     <div className={cn('relative w-fit', className)} style={{ height: height ?? 'auto' }}>

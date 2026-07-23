@@ -17,6 +17,7 @@ import { useRef, useState } from 'react';
  */
 export function useScrollPage() {
   const element = useRef<HTMLDivElement | null>(null);
+  const observer = useRef<ResizeObserver | null>(null);
   const [page, setPage] = useState<number>(1);
 
   const initElement = (node: HTMLDivElement) => {
@@ -50,15 +51,18 @@ export function useScrollPage() {
   const addListener = () => {
     if (element.current) {
       element.current.addEventListener('scroll', countScrollPage);
-      element.current.addEventListener('resize', countScrollPage);
+      // `resize` 이벤트는 window 에서만 발생하므로, 컨테이너 크기 변화는 ResizeObserver 로 감지한다.
+      observer.current = new ResizeObserver(countScrollPage);
+      observer.current.observe(element.current);
     }
   };
 
   const removeListener = () => {
     if (element.current) {
       element.current.removeEventListener('scroll', countScrollPage);
-      element.current.removeEventListener('resize', countScrollPage);
     }
+    observer.current?.disconnect();
+    observer.current = null;
   };
 
   return { ref: initElement, page, changePage };

@@ -43,7 +43,6 @@ export const shareCurrentPage = async () => {
     try {
       await navigator.share(data);
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error(err);
     }
   }

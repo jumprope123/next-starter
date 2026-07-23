@@ -18,7 +18,9 @@ import { cn } from '@/utils';
  * getHighlightedText('Hello World', 'world', { className: 'text-red-500' });
  */
 export const getHighlightedText = (text: string, query: string, options?: { className?: string }) => {
-  const re = new RegExp(`(${query})`, 'gi');
+  // 사용자 입력이 그대로 정규식에 들어가므로 특수문자를 이스케이프한다 ('C++', '(' 등에서 SyntaxError 방지).
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(${escapedQuery})`, 'gi');
   if (query !== '' && text.match(re)) {
     const parts = text.split(re);
     return (

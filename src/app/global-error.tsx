@@ -17,7 +17,6 @@ type Props = {
  */
 export default function GlobalError({ error, reset }: Readonly<Props>) {
   useEffect(() => {
-    // eslint-disable-next-line no-console
     console.error('[global-error]', error);
   }, [error]);
 
