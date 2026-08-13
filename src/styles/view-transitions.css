@@ -1,0 +1,315 @@
+/*
+ * Next 16 + React canary `<ViewTransition>` 기반 페이지 전환 애니메이션.
+ *
+ * - Link · useRouter 가 navigation 시 `transitionTypes` 를 넘기면 React 가 commit 시점에
+ *   `document.startViewTransition({ types })` 를 호출한다.
+ *   → 브라우저는 transition 도중 `:root:active-view-transition-type(<type>)` 가 true.
+ * - `<PageViewTransition>` 의 enter/exit map 이 동일 이름으로 class 도 부여하므로,
+ *   `::view-transition-{old,new}(.nav-*)` 클래스 셀렉터도 같이 매칭된다.
+ *   두 가지 셀렉터를 모두 정의해 어떤 매칭 경로든 잡히도록 한다.
+ * - 브라우저 back/forward (popstate) 는 `@/core/view-transition/popstate-view-transition.tsx` 가
+ *   직접 `document.startViewTransition` 을 구동하며, `:root` 에 `app-vt-nav-{back,forward}`
+ *   클래스를 부여한다. `:root:active-view-transition-type(...)` 옵션은 구형 WebView 미지원이라
+ *   `:root.app-vt-nav-*` 클래스 셀렉터를 추가로 정의해 동일 키프레임을 매칭시킨다.
+ * - `<ViewTransition name="page-shell">` 가 `#app-page-shell` 컨테이너에 transition-name 을 부여 →
+ *   snapshot 이 컨테이너 단위로 분리되고, image-pair 의 `overflow: clip` 으로 슬라이드 snapshot 이
+ *   컨테이너 밖으로 새는 문제도 차단된다.
+ * - root 전환은 끈다 — page-shell 만 슬라이드. body portal 에 상주하는 fixed 요소(하단 탭바 등)를
+ *   페이지와 분리하고 싶으면 그 요소에 고유 view-transition-name 을 주고 아래 패턴처럼
+ *   "OLD 숨김 + 라이브 NEW 만 표시" 규칙을 추가한다:
+ *     ::view-transition-group(my-fixed-el)  { animation: none !important; }
+ *     ::view-transition-old(my-fixed-el)    { animation: none !important; opacity: 0 !important; }
+ *     ::view-transition-new(my-fixed-el)    { animation: none !important; opacity: 1 !important; mix-blend-mode: normal; }
+ * - OLD / NEW 의 plus-lighter 블렌딩은 끄고 (회색 잔상 방지) NEW 를 OLD 위로 z-index 우선.
+ */
+
+/* ───────── 전환 중 입력 락 ─────────
+ * 전환이 진행되는 동안 `<html>` 에 `.app-vt-in-flight` 가 부여된다 (page-view-transition.tsx 의
+ * `patchStartViewTransition`). 이 시점부터 `transition.finished` 까지 입력을 차단해
+ * 네이티브 NavigationController 와 동일하게 추가 네비게이션이 끼어들지 않도록 한다.
+ *
+ * - `pointer-events: none` 으로 클릭/탭 차단.
+ * - `user-select: none` 으로 드래그 선택 차단 (전환 중 OLD/NEW snapshot 위에서 텍스트 선택이
+ *   되는 어색한 인터랙션 방지).
+ * - 차단 대상은 root 전체. iOS 가 페이지 전환 중 탭바 입력까지 잠그는 것과 동일.
+ * - `prefers-reduced-motion` 환경은 transition 자체가 0.01ms 안에 끝나 락도 즉시 해제된다.
+ */
+:root.app-vt-in-flight {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ───────── hung 전환 오버레이 킬스위치 ─────────
+ * iOS WKWebView 에서 hung 된 전환에 watchdog(forceEnd)의 skipTransition() 이 조용히 실패하면
+ * ::view-transition 오버레이가 화면에 영구 잔류한다. forceEnd 는 1차로 VT pseudo 애니메이션을
+ * 강제 완료시켜 전환을 정상 종료로 회수하고 (page-view-transition.tsx 의
+ * forceFinishViewTransitionAnimations), 그래도 페인트가 남는 최후 케이스만 이 클래스가
+ * 오버레이를 숨긴다 — 다음 startViewTransition 시작 시 해제된다.
+ *
+ * ⚠️ display:none 금지 — live 전환의 pseudo tree 에 display:none 이 닿으면 WebKit 이 페이지째
+ * 크래시하는 것이 실측 확인됨 (Playwright WebKit 결정적 재현). visibility 는
+ * 박스 해체 없이 페인트만 걷어내므로 안전하다.
+ */
+:root.app-vt-overlay-killed::view-transition,
+:root.app-vt-overlay-killed::view-transition-group(*),
+:root.app-vt-overlay-killed::view-transition-image-pair(*),
+:root.app-vt-overlay-killed::view-transition-old(*),
+:root.app-vt-overlay-killed::view-transition-new(*) {
+  visibility: hidden !important;
+}
+
+::view-transition-group(page-shell) {
+  animation-duration: 0s;
+}
+
+::view-transition-image-pair(page-shell) {
+  isolation: isolate;
+  overflow: clip;
+}
+
+::view-transition-old(page-shell),
+::view-transition-new(page-shell) {
+  /* UA 가 기본 mix-blend-mode: plus-lighter 를 적용 → 두 snapshot 이 가산 합성되어 회색 cast 발생.
+     iOS 스타일 push/pop 은 NEW 가 OLD 를 덮어 들어오는 효과이므로 일반 blending 으로 되돌린다. */
+  mix-blend-mode: normal;
+  /* fill-mode: both 로 keyframe 의 from/to 가 transition 시작·종료 시점에도 적용되어 잔상 방지 */
+  animation-fill-mode: both;
+  /*
+   * page-shell snapshot 은 캡처된 래스터 이미지다. 페이지 콘텐츠 사이 빈 영역은 투명 픽셀로
+   * 캡처되므로, push 로 NEW snapshot 이 OLD 위로 슬라이드인할 때 그 투명 틈으로 아래 레이어인
+   * OLD(이전 페이지) snapshot 이 비쳐 "두 페이지가 겹쳐 보이는" 현상이 생긴다.
+   * 의사요소 자체에 불투명 배경을 깔면 snapshot 의 투명 영역이 이 색으로 메워져 비침이 차단된다.
+   */
+  background-color: var(--background, #fff);
+}
+
+/*
+ * page-shell enter/exit 기본 애니메이션 차단.
+ *
+ * page-shell div 는 layout 상주 요소라 nav(=children update)에서만 슬라이드해야 한다. 그런데
+ * 초기 로드/Suspense 공개 시 React <ViewTransition name="page-shell"> 가 page-shell 을 enter
+ * 시키며 UA 기본 fade 가 돈다. View Transition 에서 named group(page-shell) 은 root 스냅샷
+ * "위에" 합성되는데, #next-app-portal 에 뜬 팝업이 enter 전환(~250ms) 동안 page-shell 스냅샷에
+ * 가려졌다가 전환이 끝나면 다시 보인다 → "떴다 사라졌다 다시뜸".
+ *
+ * 여기서 type 없는 enter/exit 의 기본 애니메이션만 끈다. 실제 nav 슬라이드는 아래
+ * `:root:active-view-transition-type(...)` / `:root.app-vt-nav-*` 규칙이 더 높은 specificity 로
+ * 다시 켜므로 영향받지 않는다.
+ */
+::view-transition-old(page-shell),
+::view-transition-new(page-shell) {
+  animation: none;
+}
+
+/* root (페이지 외 영역) 는 애니메이션 끄기 — 깜빡임 방지 */
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none !important;
+}
+
+/* ───────── react-hot-toast group: 위치 이동형 ─────────
+ * Toaster 컨테이너(.app-toaster, toast.css 가 view-transition-name 부여)는 페이지마다 bottom
+ * offset 이 다를 수 있다. OLD/NEW 둘 다 표시하면 서로 다른 좌표에 두 개의 토스트가 동시에
+ * 보이는 잔상이 생기므로, OLD pseudo 의 opacity 를 0 으로 즉시 숨기고 NEW 만 표시한다.
+ * group 자체에는 animation 룰을 걸지 않아 UA default morph (transform/width/height 트윈) 가
+ * 동작 → NEW snapshot 한 개가 OLD 좌표 → NEW 좌표로 부드럽게 이동하고 transition 종료 시점에
+ * 실제 DOM (NEW 좌표) 으로 자연스럽게 swap.
+ * 하단 탭바 같은 fixed 상주 요소도 같은 패턴으로 분리한다 (파일 상단 주석 참조).
+ */
+::view-transition-old(app-toaster) {
+  animation: none !important;
+  opacity: 0 !important;
+}
+::view-transition-new(app-toaster) {
+  animation: none !important;
+  opacity: 1 !important;
+  mix-blend-mode: normal;
+}
+
+/* ───────── nav-forward (depth ↑, iOS push) ─────────
+ * 새 화면이 오른쪽에서 슬라이드 인, 옛 화면은 살짝 왼쪽으로 밀리며 dim + 페이드.
+ */
+:root:active-view-transition-type(nav-forward)::view-transition-old(page-shell),
+:root.app-vt-nav-forward::view-transition-old(page-shell),
+::view-transition-old(.nav-forward) {
+  animation: 350ms cubic-bezier(0.19, 0.78, 0.32, 1) both app-vt-ios-push-out;
+}
+:root:active-view-transition-type(nav-forward)::view-transition-new(page-shell),
+:root.app-vt-nav-forward::view-transition-new(page-shell),
+::view-transition-new(.nav-forward) {
+  animation: 350ms cubic-bezier(0.19, 0.78, 0.32, 1) both app-vt-ios-push-in;
+}
+
+/* ───────── nav-back (depth ↓, iOS pop) ───────── */
+:root:active-view-transition-type(nav-back)::view-transition-old(page-shell),
+:root.app-vt-nav-back::view-transition-old(page-shell),
+::view-transition-old(.nav-back) {
+  animation: 350ms cubic-bezier(0.19, 0.78, 0.32, 1) both app-vt-ios-pop-out;
+}
+:root:active-view-transition-type(nav-back)::view-transition-new(page-shell),
+:root.app-vt-nav-back::view-transition-new(page-shell),
+::view-transition-new(.nav-back) {
+  animation: 350ms cubic-bezier(0.19, 0.78, 0.32, 1) both app-vt-ios-pop-in;
+}
+
+/* ───────── 하단 탭 전환 (좌/우) ─────────
+ * 깊이가 같은 sibling 페이지 간 이동이므로 슬라이드만 — dim/parallax 없음.
+ *  - nav-lateral-right : 오른쪽 탭으로 이동 → 새 화면이 오른쪽에서 슬라이드 인
+ *  - nav-lateral-left  : 왼쪽 탭으로 이동 → 새 화면이 왼쪽에서 슬라이드 인
+ */
+:root:active-view-transition-type(nav-lateral-right)::view-transition-old(page-shell),
+:root.app-vt-nav-lateral-right::view-transition-old(page-shell),
+::view-transition-old(.nav-lateral-right) {
+  animation: 300ms cubic-bezier(0.19, 0.78, 0.32, 1) both app-vt-lateral-right-out;
+}
+:root:active-view-transition-type(nav-lateral-right)::view-transition-new(page-shell),
+:root.app-vt-nav-lateral-right::view-transition-new(page-shell),
+::view-transition-new(.nav-lateral-right) {
+  animation: 300ms cubic-bezier(0.19, 0.78, 0.32, 1) both app-vt-lateral-right-in;
+}
+
+:root:active-view-transition-type(nav-lateral-left)::view-transition-old(page-shell),
+:root.app-vt-nav-lateral-left::view-transition-old(page-shell),
+::view-transition-old(.nav-lateral-left) {
+  animation: 300ms cubic-bezier(0.19, 0.78, 0.32, 1) both app-vt-lateral-left-out;
+}
+:root:active-view-transition-type(nav-lateral-left)::view-transition-new(page-shell),
+:root.app-vt-nav-lateral-left::view-transition-new(page-shell),
+::view-transition-new(.nav-lateral-left) {
+  animation: 300ms cubic-bezier(0.19, 0.78, 0.32, 1) both app-vt-lateral-left-in;
+}
+
+/* ───────── nav-fade (동일 depth · prefix 무관 sibling) ─────────
+ * OLD 는 불투명 그대로 고정하고 NEW 만 위로 페이드인한다. OLD/NEW 를 동시에 반투명으로
+ * 겹치는 crossfade 는 중간 구간에서 두 페이지가 모두 반투명해져 콘텐츠 대비가 훅 꺼졌다
+ * 돌아오는 "번쩍임(밝기 딥)"으로 보였음 — OLD 를 항상 100% 로 받쳐두면 어느 시점에도
+ * 완전 불투명 화면이 유지되어 새 페이지가 조용히 스며들 듯 나타난다.
+ */
+:root:active-view-transition-type(nav-fade)::view-transition-old(page-shell),
+:root.app-vt-nav-fade::view-transition-old(page-shell),
+::view-transition-old(.nav-fade) {
+  animation: 220ms ease both app-vt-fade-hold;
+}
+:root:active-view-transition-type(nav-fade)::view-transition-new(page-shell),
+:root.app-vt-nav-fade::view-transition-new(page-shell),
+::view-transition-new(.nav-fade) {
+  animation: 220ms ease both app-vt-fade-in;
+}
+
+/* ───────── keyframes ─────────
+ * push/pop OLD 의 종료 opacity 를 0 으로 떨어뜨려, transition 종료 직후 pseudo 가 제거되기 전 한 프레임
+ * 동안 dim 된 OLD snapshot 이 보이며 발생하던 회색 잔상을 차단한다.
+ *
+ * `--app-vt-old-shift` (patchStartViewTransition 이 startViewTransition 호출 시점에 주입하는 음수 px):
+ * page-shell 은 페이지 콘텐츠 전체 높이를 가진 div 라, 스크롤된 상태에서 전환하면 group 이
+ * NEW 기준(top:0)으로 스냅되며 OLD 스냅샷이 최상단으로 끌어올려진다. OLD(=`*-out`) 키프레임의
+ * transform 에 translateY 로 스크롤 오프셋을 되돌려, 보던 위치 그대로 옆으로 슬라이드되게 한다.
+ * 미정의 시 0px 폴백 → 스크롤이 없거나 미지원 환경에서는 기존 동작과 동일.
+ */
+@keyframes app-vt-ios-push-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes app-vt-ios-push-out {
+  from {
+    transform: translateX(0) translateY(var(--app-vt-old-shift, 0px));
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-30%) translateY(var(--app-vt-old-shift, 0px));
+    opacity: 0;
+  }
+}
+
+@keyframes app-vt-ios-pop-in {
+  from {
+    transform: translateX(-30%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes app-vt-ios-pop-out {
+  from {
+    transform: translateX(0) translateY(var(--app-vt-old-shift, 0px));
+  }
+  to {
+    transform: translateX(100%) translateY(var(--app-vt-old-shift, 0px));
+  }
+}
+
+@keyframes app-vt-lateral-left-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes app-vt-lateral-left-out {
+  from {
+    transform: translateX(0) translateY(var(--app-vt-old-shift, 0px));
+  }
+  to {
+    transform: translateX(100%) translateY(var(--app-vt-old-shift, 0px));
+  }
+}
+
+@keyframes app-vt-lateral-right-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes app-vt-lateral-right-out {
+  from {
+    transform: translateX(0) translateY(var(--app-vt-old-shift, 0px));
+  }
+  to {
+    transform: translateX(-100%) translateY(var(--app-vt-old-shift, 0px));
+  }
+}
+
+@keyframes app-vt-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* nav-fade 의 OLD: 스크롤 보정만 유지한 채 불투명 고정 — NEW 페이드인의 바탕 역할 */
+@keyframes app-vt-fade-hold {
+  from {
+    opacity: 1;
+    transform: translateY(var(--app-vt-old-shift, 0px));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(var(--app-vt-old-shift, 0px));
+  }
+}
+
+/* prefers-reduced-motion: 슬라이드 끄고 즉시 교체. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+  }
+}

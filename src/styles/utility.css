@@ -7,20 +7,182 @@
   }
 }
 
+/* *-screen-enhanced: page-shell content box 와 같은 "뷰포트 가득" 높이.
+   safe-area 게이트 시 page-shell 이 적용한 패딩(--app-shell-pad-*)과 탭 페이지 nav 스페이서
+   (--app-shell-reserve-bottom-nav)를 빼, 100dvh 자식 + page-shell 패딩 이중계산(불필요한 스크롤)을 막는다.
+   게이트 OFF 시 세 변수 모두 0 → 종전 100dvh 와 동일. (safe-area.css 가 변수 정의)
+   100vh fallback 줄은 dvh 미지원 브라우저용일 뿐이라 동일한 var 보정을 그대로 적용한다. */
 /*noinspection CssOverwrittenProperties*/
 @utility h-screen-enhanced {
-  height: 100vh; /* Fallback */
-  height: 100dvh;
+  height: calc(
+    100vh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) - var(--app-shell-reserve-bottom-nav, 0px)
+  ); /* Fallback (no dvh) */
+  height: calc(
+    100dvh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) - var(--app-shell-reserve-bottom-nav, 0px)
+  );
 }
 
 /*noinspection CssOverwrittenProperties*/
 @utility min-h-screen-enhanced {
-  min-height: 100vh; /* Fallback */
-  min-height: 100dvh;
+  min-height: calc(
+    100vh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) - var(--app-shell-reserve-bottom-nav, 0px)
+  ); /* Fallback (no dvh) */
+  min-height: calc(
+    100dvh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) - var(--app-shell-reserve-bottom-nav, 0px)
+  );
 }
 
 /*noinspection CssOverwrittenProperties*/
 @utility max-h-screen-enhanced {
-  max-height: 100vh; /* Fallback */
-  max-height: 100dvh;
+  max-height: calc(
+    100vh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) - var(--app-shell-reserve-bottom-nav, 0px)
+  ); /* Fallback (no dvh) */
+  max-height: calc(
+    100dvh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) - var(--app-shell-reserve-bottom-nav, 0px)
+  );
+}
+
+/* *-screen-without-header: page-shell content box 에서 헤더(--spacing-header, 안전영역 포함) 를 뺀 높이.
+   헤더는 flow 에서 그 높이를 차지하므로, content box(=screen-enhanced) 에서 헤더를 추가로 빼야
+   헤더+본문이 content box 를 넘지 않는다. (헤더 페이지는 pad-top 이 0 이라 spacing-header 의 safe-top 과
+   중복되지 않는다.) 게이트 OFF 시 보정 변수 0 → 100dvh - spacing-header(=48px) 와 동일. */
+/*noinspection CssOverwrittenProperties*/
+@utility h-screen-without-header {
+  height: calc(
+    100vh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) -
+      var(--app-shell-reserve-bottom-nav, 0px) - var(--spacing-header)
+  ); /* Fallback (no dvh) */
+  height: calc(
+    100dvh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) -
+      var(--app-shell-reserve-bottom-nav, 0px) - var(--spacing-header)
+  );
+}
+
+/*noinspection CssOverwrittenProperties*/
+@utility min-h-screen-without-header {
+  min-height: calc(
+    100vh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) -
+      var(--app-shell-reserve-bottom-nav, 0px) - var(--spacing-header)
+  ); /* Fallback (no dvh) */
+  min-height: calc(
+    100dvh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) -
+      var(--app-shell-reserve-bottom-nav, 0px) - var(--spacing-header)
+  );
+}
+
+/*noinspection CssOverwrittenProperties*/
+@utility max-h-screen-without-header {
+  max-height: calc(
+    100vh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) -
+      var(--app-shell-reserve-bottom-nav, 0px) - var(--spacing-header)
+  ); /* Fallback (no dvh) */
+  max-height: calc(
+    100dvh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) -
+      var(--app-shell-reserve-bottom-nav, 0px) - var(--spacing-header)
+  );
+}
+
+/* *-screen-without-bottom-nav: 바텀네비가 있는 페이지의 본문 높이. --spacing-bottom-nav(안전영역 포함)
+   가 이미 nav 분량이고, page-shell min-height 의 --app-shell-reserve-bottom-nav 와 같은 값이므로
+   여기선 reserve-nav 를 다시 빼지 않는다(이중 차감 방지). page-shell 패딩(pad-*)만 추가로 뺀다.
+   게이트 OFF 시 pad-* 0 → 100dvh - spacing-bottom-nav(=60px) 와 동일. */
+/*noinspection CssOverwrittenProperties*/
+@utility h-screen-without-bottom-nav {
+  height: calc(
+    100vh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) - var(--spacing-bottom-nav)
+  ); /* Fallback (no dvh) */
+  height: calc(100dvh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) - var(--spacing-bottom-nav));
+}
+
+/*noinspection CssOverwrittenProperties*/
+@utility min-h-screen-without-bottom-nav {
+  min-height: calc(
+    100vh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) - var(--spacing-bottom-nav)
+  ); /* Fallback (no dvh) */
+  min-height: calc(
+    100dvh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) - var(--spacing-bottom-nav)
+  );
+}
+
+/*noinspection CssOverwrittenProperties*/
+@utility max-h-screen-without-bottom-nav {
+  max-height: calc(
+    100vh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) - var(--spacing-bottom-nav)
+  ); /* Fallback (no dvh) */
+  max-height: calc(
+    100dvh - var(--app-shell-pad-top, 0px) - var(--app-shell-pad-bottom, 0px) - var(--spacing-bottom-nav)
+  );
+}
+
+/* h-dvh-safe-bottom-enhanced: 전체화면 포털 오버레이(풀스크린 바텀시트 등)의 내부 높이.
+   하단 기기 안전영역만 뺀다 — 시트 루트(bottom-0 + pb-safe)의 하단 패딩과 합치면 시트 전체가
+   정확히 100dvh 가 되어 배경이 화면 최상단(상태바 뒤)까지 덮인다. 상단 안전영역은 높이에서
+   빼지 않고 내부 pt-safe 패딩으로 처리한다 — 높이에서 빼면 시트가 top inset 만큼 짧아져
+   상태바 뒤로 딤(회색 띠)이 드러난다.
+   page-shell 패딩(--app-shell-pad-*)이 아니라 기기 안전영역(--twsa-*)을 쓰는 이유: 포털은
+   page-shell 밖이라 밑에 깔린 페이지의 헤더/바텀네비 상태에 높이가 흔들리면 안 된다.
+   vh 폴백을 먼저 까는 이유: dvh 미지원 기기(Android WebView 108 미만 · iOS 15.4 미만)에서
+   calc(100dvh - ...) 단일 선언은 통째로 무효가 되고 height 가 auto 로 떨어져 오버레이가
+   콘텐츠 높이만큼만 차지한다(= 전체화면이 안 됨). */
+/*noinspection CssOverwrittenProperties*/
+@utility h-dvh-safe-bottom-enhanced {
+  height: calc(100vh - var(--twsa-safe-area-inset-bottom, 0px)); /* Fallback (no dvh) */
+  height: calc(100dvh - var(--twsa-safe-area-inset-bottom, 0px));
+}
+
+/*
+ * 옐로우 arc 스피너 — 컨테이너 회전(1s)과 arc 신축(2s)을 겹쳐 돌리는 범용 로딩 스피너.
+ * SVG circle(stroke 둘레 ~120)에 두 유틸을 나눠 걸어 쓴다.
+ */
+@keyframes app-arc-spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes app-arc-spinner-arc {
+  0% {
+    stroke-dasharray: 1 119;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 72 48;
+    stroke-dashoffset: -28;
+  }
+  100% {
+    stroke-dasharray: 1 119;
+    stroke-dashoffset: -120;
+  }
+}
+
+@utility animate-arc-spinner-rotate {
+  animation: app-arc-spinner-rotate 1s linear infinite;
+}
+
+@utility animate-arc-spinner-arc {
+  animation: app-arc-spinner-arc 2s linear infinite;
+}
+
+/*
+ * 하단 네비게이터 등장 애니메이션 (아래 → 위 슬라이드).
+ *
+ * nav 는 숨김일 때 DOM 에서 아예 빠지는 구조를 전제한다(유령 탭바 방지) — 사라지는
+ * 애니메이션은 없고, 마운트 시점 1 회 재생되는 enter 만 둔다. `fill: none` 이라 재생이 끝나면
+ * 애니메이션이 만든 임시 합성 레이어가 사라지고 요소는 평범한 페인트로 돌아간다 —
+ * transform transition 을 상시 걸어두는 방식(WKWebView 에서 레이어가 굳는 원인)과 다르다.
+ *
+ * 시작 위치 82px: nav 60px + 돌출 아이콘 여유 + overshoot. 안전영역만큼 더 내려
+ * 뱃지류까지 viewport 밖에서 출발한다.
+ */
+@keyframes app-bottom-nav-in {
+  from {
+    transform: translateY(calc(5.125rem + var(--twsa-safe-area-inset-bottom, 0px)));
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@utility animate-bottom-nav-in {
+  animation: app-bottom-nav-in 300ms ease-out;
 }

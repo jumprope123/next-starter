@@ -2,4 +2,9 @@
   --container-md: 48rem;
   --container-lg: 64rem;
   --container-xl: 80rem;
+
+  /* h-header / h-bottom-nav 등 spacing 유틸에서 쓰는 고정 바 높이 (variables.css 가 값 출처 —
+     safe-area 게이트가 켜지면 안전영역만큼 자동으로 커진다). */
+  --spacing-header: var(--spacing-header);
+  --spacing-bottom-nav: var(--spacing-bottom-nav);
 }

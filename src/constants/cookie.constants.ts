@@ -8,4 +8,9 @@
 export enum CookieName {
   /** 다크모드 등 사용자 테마 환경 설정 (예시). */
   THEME = 'app-theme',
+  /**
+   * 웹뷰 safe-area 게이트 플래그. 미들웨어(proxy.ts)가 `?safearea` 파라미터를 이 쿠키로 전환하고,
+   * layout 이 읽어 `<html>` 에 `.app-safe-area` 클래스를 SSR 주입한다 (styles/safe-area.css 참조).
+   */
+  SAFE_AREA = 'app-safe-area',
 }

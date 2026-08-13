@@ -1,14 +1,81 @@
+/*
+ * 전역 스타일 단일 진입점.
+ * 모든 partial 을 여기서 한 번씩만 import 한다 — partial 끼리 서로 import 하지 않는다.
+ * 순서: 토큰(:root 변수) → @theme/유틸 → safe-area 게이트(플러그인 뒤) → 페이지 전환 → 연출 → 글로벌 리셋.
+ */
 @import 'tailwindcss';
+@import 'tailwindcss-safe-area';
+
+@import './variables.css';
 @import './colors.css';
 @import './fonts.css';
 @import './gsap.css';
 @import './layout.css';
-@import './safe-area.css';
 @import './utility.css';
-@import './variables.css';
+/* tailwindcss-safe-area 의 --twsa-safe-area-inset-* 변수를 게이트로 덮어쓴다.
+   반드시 위 @import "tailwindcss-safe-area" 이후에 와서 기본 :root(env()) 정의를 이긴다. */
+@import './safe-area.css';
+@import './view-transitions.css';
+@import './custom-pointer.css';
+@import './press-feedback.css';
+@import './toast.css';
+@import './overlay-motion.css';
+
+/* ───────── 글로벌 리셋 / 앱형 UX ───────── */
 
 body {
   -webkit-tap-highlight-color: transparent;
+  /*
+   * iOS(WebKit) 길게 누르기 콜아웃 차단 — 링크/버튼/이미지를 꾹 누르면 뜨는 "미리보기 ·
+   * URL 노출 · 이미지 저장" 류 네이티브 메뉴를 막아 앱처럼 동작하게 한다. inherited 속성이라
+   * body 에 두면 하위로 전파된다. (Android/데스크톱은 이 속성을 무시 → 영향 없음.)
+   */
+  -webkit-touch-callout: none;
+}
+
+/*
+ * 문서 스크롤 rubber-band(고무줄) 오버스크롤 완화.
+ *
+ * 최상단을 넘겨 당기는 iOS rubber-band 오버스크롤 시 콘텐츠 레이어가 통째로 늘어나며
+ * sticky 헤더가 함께 끌려 내려가 "헤더가 안 고정된 것처럼" 보인다.
+ *
+ * `overscroll-behavior-y: none` 은 문서 스크롤러의 바운스/스크롤 체이닝을 끈다.
+ *   - Android WebView·데스크톱·최신 iOS 일부: 실제로 바운스가 사라진다.
+ *   - iOS WKWebView 문서 스크롤러: 네이티브 UIScrollView 레벨에서 무시될 수 있어
+ *     효과가 보장되지 않는다(= best-effort). 전 화면·무위험의 확정 해법은 네이티브에서
+ *     바운스를 끄는 것: iOS `webView.scrollView.bounces = false` /
+ *     Android `webView.overScrollMode = OVER_SCROLL_NEVER`.
+ *
+ * 가로 축도 차단 — 가로 스크롤 리스트를 끝에서 더 당기면 문서로 체이닝된 가로 rubber-band 가
+ * 페이지를 통째로 끌어내 뒤 배경이 드러난다. popstate View Transition 중 브라우저 기본
+ * 스와이프 내비게이션 글로우가 끼어드는 것도 함께 막는다.
+ * 내부 스크롤 컨테이너(overscroll-contain 등)는 문서 스크롤러와 별개라 영향 없음.
+ */
+html {
+  overscroll-behavior-y: none;
+  overscroll-behavior-x: none;
+}
+
+/*
+ * 텍스트 입력은 복사·붙여넣기·선택 메뉴가 필요하므로 콜아웃을 되살린다.
+ * (위 body 규칙이 inherit 로 꺼버리는 걸 입력 요소에서만 해제.)
+ */
+input,
+textarea,
+[contenteditable='true'] {
+  -webkit-touch-callout: default;
+}
+
+/*
+ * 이미지/링크 드래그 차단. <img> 를 길게 누르면(특히 아이콘) 네이티브 드래그가 시작돼,
+ * 그 드래그가 끝나지 않으면 화면이 드래그 모드에 갇혀 스크롤만 되고 탭/클릭이 전부 막힌다.
+ * 앱형 UI 엔 드래그-드롭 기능이 없으므로 전역으로 끈다.
+ */
+img,
+a,
+picture {
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 button:not(:disabled) {
@@ -17,6 +84,35 @@ button:not(:disabled) {
 
 button:disabled {
   cursor: not-allowed;
+}
+
+/*
+ * body 스크롤 락 — `@/hooks` 의 useScrollLock(참조 카운팅)이 토글하는 클래스.
+ * inline overflow 를 직접 만지지 않고 클래스로만 잠가, body overflow 를 inline 으로 만지는
+ * 3rd-party(react-modal-sheet/vaul 등)와 직교하게 동작한다(서로의 락을 안 건드림 → stale 복원 없음).
+ */
+body.app-scroll-locked {
+  overflow: hidden;
+}
+
+/*
+ * 폼 필드의 UA 기본 포커스 링 제거 — iOS(WebKit) 15.4+ 가 인풋 포커스 시 파란 outline 링을
+ * 그려 디자인 시스템의 자체 보더/포커스 스타일과 이중으로 보인다.
+ * 텍스트 필드는 자체 보더·캐럿으로 포커스가 이미 드러나므로 UA 링만 걷어낸다.
+ * 버튼/링크의 키보드 포커스(focus-visible)는 건드리지 않는다.
+ */
+input:focus,
+textarea:focus,
+select:focus,
+[contenteditable='true']:focus {
+  outline: none;
+}
+
+/* 숫자 Input 인 경우 우측 화살표 제거 */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .flex-1 {

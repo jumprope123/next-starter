@@ -1,0 +1,108 @@
+/**
+ * 모바일 시스템 앱 스타일 눌림(press) 피드백 — leaf 파일. 다른 partial 을 import 하지 않는다.
+ * (`@/components` 의 PressFeedback 컴포넌트가 `data-pressed` 속성을 토글한다.)
+ * 터치·마우스 모두에서 동작한다. 다만 커서 하이라이트(custom-pointer.css)가 이미 요소를
+ * 감싸 강조하고 있는 마우스 입력에서는 PressFeedback 이 `--press-tint` 를 0 으로 고정해
+ * 색상 강조를 빼고 축소만 남긴다 — 두 강조가 겹치면 과하게 어두워진다.
+ *
+ * - 축소: `scale` 개별 변환 프로퍼티를 쓴다 — `transform` 을 덮어쓰지 않아
+ *   자체 transform 을 가진 요소(애니메이션·유틸리티 클래스)와 충돌하지 않는다.
+ * - 색상 강조: inset box-shadow 로 border-box 전체에 톤을 얹는다 — 배경색을 건드리지 않고
+ *   요소의 border-radius(모서리별 값 포함)를 그대로 따라가며, 내용 아래에 깔린다.
+ * - 모서리: 각진 대상은 강조 톤이 모서리까지 칼같이 차 딱딱해 보이므로 PressFeedback 이 눌린 동안만
+ *   인라인 border-radius 를 얹는다(PRESS_FEEDBACK_SQUARE_RADIUS). 값을 CSS 가 정하지 않는 이유는
+ *   "radius 가 없는 요소만" 이라는 판정에 계산값 읽기가 필요해서다 — 여기서는 전환만 맡는다.
+ *   톤이 빠지는 마우스 입력에서는 이 둥글리기도 함께 생략된다(아래 --press-tint 설명 참고).
+ */
+
+/*
+ * 강조 톤의 진행도(0 → 1).
+ *
+ * box-shadow 자체를 전환 대상으로 두면 안 된다. 눌림은 상태 속성이 **없는** 상태에서
+ * 시작하므로 전환의 시작값이 요소 본래의 그림자(대개 `none`)이고, 그림자 목록끼리의
+ * 보간은 이때 길이만 움직인다 — 실측하면 전환 내내 `rgba(0, 0, 0, 0) … 941px inset`,
+ * 즉 **색은 완전 투명인 채 스프레드만 자라다가 마지막 프레임에 최대 알파로 팝**한다.
+ * 톤이 "갑자기 바뀐다"고 보이던 실체이며, 같은 구간을 온전히 쓰는 축소와도 어긋난다.
+ *
+ * 그래서 그림자는 항상 full-spread 로 고정하고 **알파만** 이 프로퍼티로 보간한다.
+ * `@property` 로 등록해야 보간된다 — 등록되지 않은 커스텀 프로퍼티는 값이 즉시 튄다.
+ *
+ * 커서 하이라이트가 켜진 마우스 입력에서는 PressFeedback 이 인라인으로 0 을 고정한다
+ * (인라인 선언이 아래 'on' 규칙보다 우선하므로 색상 강조만 빠지고 축소는 그대로 재생된다).
+ */
+@property --press-tint {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+/*
+ * 눌리기 직전 요소의 원래 box-shadow 보관함(PressFeedback 이 인라인으로 채운다).
+ * 커스텀 프로퍼티는 기본이 상속이라 등록해서 꺼둔다 — 누른 요소의 그림자가
+ * 자식들에게까지 흘러가면 안 된다. 값이 없으면 무효 → 사용처의 폴백이 적용된다.
+ */
+@property --press-shadow {
+  syntax: '*';
+  inherits: false;
+}
+
+/*
+ * 눌림/해제 공통. 이 규칙이 'off' 상태(해제 전환 구간)도 담당한다 —
+ * 'on' 규칙에만 두면 속성을 떼는 순간 전환 선언까지 사라져 즉시 튕겨 돌아간다.
+ *
+ * box-shadow 는 전환 대상이 아니라 `--press-tint` 를 따라 매 프레임 다시 계산될 뿐이라
+ * 톤이 균일하게 배어 나온다. 톤 색은 고정 색상값이 아니라 `currentColor` — 요소의 글자색은
+ * 대개 자기 배경과 대비되므로 밝은 카드는 어두워지고 어두운 버튼은 밝아져, 흰 카드와
+ * 반전 배색(진한 CTA 버튼 등) 모두에서 눌림 세기가 일정하다.
+ * `--press-shadow` 에는 PressFeedback 이 눌리기 직전 요소의 원래 그림자를 담아둔다(없으면 투명)
+ * — 강조 그림자가 `shadow-lg` 같은 자체 그림자를 지우지 않게 한다.
+ *
+ * transition 은 **도착 상태(after-change style)의 선언**이 적용된다 — 즉 'on' 규칙의
+ * duration 이 눌리는 속도, 이 규칙의 duration 이 돌아오는 속도가 된다. 두 상태 모두
+ * scale 과 --press-tint 에 같은 duration·easing 을 줘 축소와 톤이 한 몸으로 움직인다.
+ * 해제(220ms)는 눌림(130ms)보다 느긋하게 — 반응은 즉각, 복귀는 부드럽게.
+ * background-color/color 도 함께 잡아 hover 전환(transition-colors)이 눌림 중에 끊기지 않게 한다.
+ */
+[data-pressed] {
+  box-shadow:
+    inset 0 0 0 100vmax color-mix(in srgb, currentColor calc(var(--press-tint) * 4%), transparent),
+    var(--press-shadow, 0 0 #0000);
+  /* 돌아오는 구간 — 조금 길게, 끝에서 부드럽게 안착 (PRESS_FEEDBACK_RELEASE_MS 와 짝) */
+  transition:
+    scale 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    --press-tint 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-pressed='on'] {
+  --press-tint: 1;
+  scale: var(--press-scale, 0.97);
+  /* 눌리는 구간 — 손가락에 붙어 오도록 짧고 감속만 있는 커브 */
+  transition:
+    scale 130ms cubic-bezier(0.32, 0.72, 0.3, 1),
+    --press-tint 130ms cubic-bezier(0.32, 0.72, 0.3, 1),
+    border-radius 130ms cubic-bezier(0.32, 0.72, 0.3, 1),
+    background-color 130ms cubic-bezier(0.32, 0.72, 0.3, 1),
+    color 130ms cubic-bezier(0.32, 0.72, 0.3, 1);
+}
+
+/*
+ * 색상 강조만 빼는 옵트아웃 — `data-press-no-tint` 를 요소 자신 또는 조상에 붙인다.
+ * (효과를 통째로 끄는 `data-press-ignore` 와 달리 축소는 그대로 남는다.)
+ * `--press-tint` 는 `inherits: false` 로 등록돼 있어 조상에 값을 얹는 것만으로는 내려가지 않으므로
+ * 자손 셀렉터를 함께 둔다 — 하단 네비게이터처럼 컨테이너 하나로 하위 탭 전체를 덮는 용도.
+ * 둘 다 [data-pressed='on'] 보다 specificity 가 높아 'on' 의 `--press-tint: 1` 을 이긴다.
+ */
+[data-pressed][data-press-no-tint],
+[data-press-no-tint] [data-pressed] {
+  --press-tint: 0;
+}
+
+/* 움직임을 줄이도록 설정한 사용자에겐 축소 없이 색상 강조만 남긴다 */
+@media (prefers-reduced-motion: reduce) {
+  [data-pressed='on'] {
+    scale: 1;
+  }
+}

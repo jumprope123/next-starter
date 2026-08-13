@@ -1,0 +1,102 @@
+/*
+ * Toast 등장/퇴장 모션 — leaf 파일. 다른 partial 을 import 하지 않는다.
+ * (토스트 컴포넌트가 이 keyframes 를 인라인 `animation` 으로 참조한다.
+ *  react-hot-toast 의 ToastBar 는 자체 애니메이션을 **인라인 style** 로 넣기 때문에
+ *  클래스로는 덮을 수 없어, 값은 컴포넌트가 조립하고 여기엔 keyframes 만 둔다.)
+ *
+ * 모션 스펙:
+ *  - 등장 430ms — y 50px → 0 / opacity 0 → 1
+ *  - 퇴장 300ms — y 0 → 40px / opacity 1 → 0
+ * 이동과 페이드의 easing 이 서로 다르므로(등장 y 는 circ-out, opacity 는 expo-out) 한 애니메이션에
+ * 묶지 않고 **두 개를 동시에** 재생한다 — CSS 는 keyframe 단위로만 easing 을 줄 수 있다.
+ *
+ * 사용 예 (Toaster 의 children render prop 또는 커스텀 ToastBar):
+ *   animation: 'app-toast-enter-move 430ms cubic-bezier(0,0.55,0.45,1) both,
+ *              app-toast-enter-fade 430ms cubic-bezier(0.16,1,0.3,1) both'
+ */
+
+/*
+ * 겹쳐 덮기 — 토스트는 한 개만 보이고, 새 토스트가 아래에서 올라와 기존 토스트를 덮는다.
+ *
+ * react-hot-toast 의 컨테이너는 토스트가 서로 겹치지 않도록 오래된 쪽 wrapper 에 인라인
+ * `transform: translateY(...)` 오프셋(+ 230ms transition)을 줘 위로 밀어 올린다. 덮는 동안에는
+ * 같은 자리에 있어야 하므로 그 오프셋을 되돌린다. 최신 토스트가 DOM 첫 번째 자식이므로,
+ * 밀려나는 대상은 언제나 그 뒤의 형제들이다.
+ *
+ * z-index 도 함께 뒤집는다. 라이브러리가 보이는 토스트 전부에 같은 z-index(9999)를 주기 때문에
+ * 그대로 두면 나중 형제(= 더 오래된 토스트)가 위에 그려져 올라오는 새 토스트를 가린다.
+ */
+.app-toaster > div:first-child {
+  z-index: 10000;
+}
+
+.app-toaster > div:not(:first-child) {
+  transform: none !important;
+  transition: none !important;
+}
+
+/*
+ * View Transition 과의 합성 — 토스트 컨테이너를 별도 VT group 으로 분리한다.
+ * 페이지 슬라이드 시 OLD 스냅샷의 토스트가 함께 슬라이드되거나 두 좌표에 겹쳐 보이는 잔상을
+ * 막고, NEW(라이브) 하나만 표시한다 (view-transitions.css 의 app-toaster 규칙과 짝).
+ */
+.app-toaster {
+  view-transition-name: app-toaster;
+}
+
+@keyframes app-toast-enter-move {
+  from {
+    transform: translate3d(0, 50px, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes app-toast-enter-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes app-toast-exit-move {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 40px, 0);
+  }
+}
+
+@keyframes app-toast-exit-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/*
+ * 감소된 모션 선호 시에는 이동을 없애고 페이드만 남긴다.
+ * 같은 이름의 @keyframes 를 뒤에서 다시 선언하면 앞선 정의를 완전히 대체하므로,
+ * 컴포넌트 쪽 animation 문자열은 손대지 않고 여기서만 무력화할 수 있다.
+ */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes app-toast-enter-move {
+    from,
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes app-toast-exit-move {
+    from,
+    to {
+      transform: none;
+    }
+  }
+}

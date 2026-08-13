@@ -3,6 +3,14 @@
   /* Colors */
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Heights.
+     safe-area 게이트가 켜지면(--twsa-safe-area-inset-* 가 env()) 헤더/바텀네비가 안전영역만큼
+     커진다. 이 변수를 쓰는 h-header / h-bottom-nav(고정 바·스페이서)와
+     *-without-header / *-without-bottom-nav 유틸(콘텐츠 높이)이 한꺼번에 일관되게 보정된다.
+     게이트 off 시 --twsa-* 는 0px 라 기존 48px/60px 그대로. (safe-area.css 가 변수 출처) */
+  --spacing-bottom-nav: calc(60px + var(--twsa-safe-area-inset-bottom, 0px));
+  --spacing-header: calc(48px + var(--twsa-safe-area-inset-top, 0px));
 }
 
 /* Dark */

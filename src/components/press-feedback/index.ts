@@ -1,0 +1,7 @@
+export { PressFeedback } from './press-feedback';
+export {
+  PRESS_FEEDBACK_DEEP_SCALE_ATTRIBUTE_SELECTOR,
+  PRESS_FEEDBACK_IGNORE_ATTRIBUTE_SELECTOR,
+  PRESS_FEEDBACK_PASSTHROUGH_ATTRIBUTE_SELECTOR,
+  PRESS_FEEDBACK_SELECTOR,
+} from './press-feedback.constants';

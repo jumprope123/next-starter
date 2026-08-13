@@ -1,88 +1,88 @@
 /*
- * iOS notch / 안드로이드 네비게이션 바를 피해 안전 영역(safe-area-inset-*) 만큼
- * margin / padding 을 자동으로 채워 주는 Tailwind 4 유틸리티들.
+ * 웹뷰 safe-area 게이트.
  *
- * 사용 예: <header className="pt-safe pb-safe">  → padding-top/bottom 에 safe-area inset 추가
- *         <main className="min-h-safe">          → 안전 영역만 잘라낸 viewport 높이 보장
+ * 앱을 네이티브 WebView 로 감쌀 때, 일부 네이티브 앱은 이미 자체적으로 safe-area 를 통제하고
+ * 있어서 웹이 또 안전영역 padding 을 주면 이중 적용된다. 그래서 "게이트" 방식을 쓴다:
+ * 안전영역을 웹이 제어해야 하는 앱만 첫 진입 URL 에 `?safearea=1` 을 실어 보낸다.
+ * 미들웨어(proxy.ts)가 이를 쿠키로 저장하고, layout 이 쿠키를 읽어 <html> 에
+ * `.app-safe-area` 클래스를 SSR 주입한다.
  *
- * 더 자세한 문서: https://developer.mozilla.org/en-US/docs/Web/CSS/env
+ * tailwindcss-safe-area 플러그인은 :root 에서 --twsa-safe-area-inset-* 를 env() 로 매핑하고,
+ * 모든 유틸(pt-safe, pb-safe-offset-N, h-dvh-safe, inset-safe ...)이 그 변수를 거친다.
+ * 기기별 env 키 차이 등 env 매핑은 전적으로 패키지에 맡긴다 — 여기서 env() 를 직접 쓰지 않는다.
+ *
+ * 게이트는 "OFF 일 때만 그 변수를 0 으로 리셋"하는 방식으로 구현한다:
+ *   - `.app-safe-area` 가 없으면 아래 규칙이 변수를 0px 로 덮어써 모든 *-safe 유틸이 무력화(=기존 동작).
+ *   - `.app-safe-area` 가 있으면 `:not(.app-safe-area)` 가 불일치 → 이 리셋이 빠지고 패키지의
+ *     `:root { --twsa-*: env(...) }` 정의가 그대로 살아나 실제 안전영역이 적용된다.
+ * `:root:not(.app-safe-area)` 는 패키지의 `:root` 보다 specificity 가 높아(클래스 1개 추가)
+ * OFF 일 때 확실히 이긴다. 이 파일은 `@import "tailwindcss-safe-area"` 뒤에 import 된다.
+ *
+ * viewport-fit=cover 는 layout 의 viewport export 에 always-on (env() 가 실제 inset 을
+ * 보고하려면 cover 필수). cover 는 콘텐츠를 edge-to-edge 로 깔 뿐, 안전영역 보정은
+ * 전적으로 이 게이트 + 패키지 변수로만 이뤄진다.
+ *
+ * 순수 브라우저 프로젝트(웹뷰 아님)에서 iOS Safari 노치 대응이 항상 필요하면
+ * 아래 `:root:not(.app-safe-area)` 리셋 블록만 제거하면 게이트 없이 상시 적용된다.
  */
 
-@utility m-safe {
-  margin: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-}
-@utility mx-safe {
-  margin-right: env(safe-area-inset-right);
-  margin-left: env(safe-area-inset-left);
-}
-@utility my-safe {
-  margin-top: env(safe-area-inset-top);
-  margin-bottom: env(safe-area-inset-bottom);
-}
-@utility mt-safe {
-  margin-top: env(safe-area-inset-top);
-}
-@utility mr-safe {
-  margin-right: env(safe-area-inset-right);
-}
-@utility mb-safe {
-  margin-bottom: env(safe-area-inset-bottom);
-}
-@utility ml-safe {
-  margin-left: env(safe-area-inset-left);
+:root:not(.app-safe-area) {
+  --twsa-safe-area-inset-top: 0px;
+  --twsa-safe-area-inset-right: 0px;
+  --twsa-safe-area-inset-bottom: 0px;
+  --twsa-safe-area-inset-left: 0px;
 }
 
-@utility p-safe {
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+/*
+ * page-shell 자동 안전영역 inset.
+ *
+ * 페이지마다 상/하단 여백을 일일이 넣지 않아도, "상단/하단에 안전영역을 자체 처리하는
+ * 요소가 없는 페이지"는 page-shell(#app-page-shell)이 자동으로 그 방향에 안전영역만큼
+ * 여백을 만든다. 스크롤 시 콘텐츠가 기기 영역까지 보이되, 첫/마지막 콘텐츠가 노치·홈
+ * 인디케이터에 가리지 않는다.
+ *
+ * 동작 원리: 안전영역을 자체 처리하는 컴포넌트(헤더/바텀네비/고정 CTA 바/바닥 고정 폼/
+ * 내부 스크롤 컨테이너)는 `data-safe-area-anchor="top"|"bottom"` 마커를 단다. 그 마커가
+ * 문서 어딘가에 있으면 `body:has(...)`가 매칭돼 해당 방향 자동 여백을 끈다(= 이중 방지).
+ * 마커가 없으면(=그 방향에 아무것도 안 붙은 일반 스크롤 페이지) 자동 여백이 적용된다.
+ *
+ * 게이트 OFF 시 --twsa-* 가 0px 라 padding 도 0 → 기존 동작과 100% 동일.
+ * `~=` 는 공백 구분 토큰 매칭이라 한 요소가 "top bottom" 둘 다 가질 수 있다.
+ * `:has()` 는 iOS Safari 15.4+/Chrome 105+ 지원.
+ *
+ * 새 페이지: 아무것도 안 하면 자동 커버. 상/하단에 고정 요소를 새로 만들면 그 요소에
+ * `data-safe-area-anchor` 마커만 달면 된다 (페이지별 수동 여백 작업 불필요).
+ *
+ * 충돌 방지(핵심): page-shell 패딩과 자식의 full-height(100dvh)가 이중 계산되면 패딩만큼
+ * 불필요한 스크롤이 생긴다. 그래서 "page-shell 이 실제 적용하는 패딩"을 --app-shell-pad-*
+ * 변수로 노출하고, full-height 유틸(*-screen-enhanced)이 그 값을 빼서 content box 와 정확히
+ * 같은 높이가 되게 한다. 또 탭 페이지의 하단 네비 스페이서(page-shell 밖 normal flow)는
+ * --app-shell-reserve-bottom-nav 로 page-shell min-height 에서 빼, page-shell + 스페이서 = 100dvh.
+ * 이 reserve 차감은 safe-area 게이트와 무관하게 스페이서가 존재하면 항상 적용한다 — 스페이서
+ * 높이(--spacing-bottom-nav = 60px + safe-inset)가 게이트 OFF 시 자동으로 60px 로 줄어 양쪽이
+ * 일치하기 때문. (게이트로 막으면 OFF 일 때 page-shell 100dvh + 스페이서 60px = 불필요한 스크롤.)
+ */
+:root {
+  --app-shell-pad-top: var(--twsa-safe-area-inset-top);
+  --app-shell-pad-bottom: var(--twsa-safe-area-inset-bottom);
+  --app-shell-reserve-bottom-nav: 0px;
 }
-@utility px-safe {
-  padding-right: env(safe-area-inset-right);
-  padding-left: env(safe-area-inset-left);
+body:has([data-safe-area-anchor~='top']) {
+  --app-shell-pad-top: 0px;
 }
-@utility py-safe {
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+body:has([data-safe-area-anchor~='bottom']) {
+  --app-shell-pad-bottom: 0px;
 }
-@utility pt-safe {
-  padding-top: env(safe-area-inset-top);
-}
-@utility pr-safe {
-  padding-right: env(safe-area-inset-right);
-}
-@utility pb-safe {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-@utility pl-safe {
-  padding-left: env(safe-area-inset-left);
+/* 스페이서가 있으면 게이트 상태와 무관하게 page-shell 을 nav 스페이서만큼 줄인다.
+   (--spacing-bottom-nav 가 게이트 OFF 시 자동으로 60px 라 page-shell + 스페이서 = 100dvh) */
+:root:has([data-bottom-nav-spacer]) {
+  --app-shell-reserve-bottom-nav: var(--spacing-bottom-nav);
 }
 
-@utility inset-safe {
-  top: env(safe-area-inset-top);
-  right: env(safe-area-inset-right);
-  bottom: env(safe-area-inset-bottom);
-  left: env(safe-area-inset-left);
-}
-@utility top-safe {
-  top: env(safe-area-inset-top);
-}
-@utility right-safe {
-  right: env(safe-area-inset-right);
-}
-@utility bottom-safe {
-  bottom: env(safe-area-inset-bottom);
-}
-@utility left-safe {
-  left: env(safe-area-inset-left);
-}
-
-/* viewport 에서 safe-area 만큼을 제외한 가용 높이. 가로 모드/PWA 에서 유용. */
 /*noinspection CssOverwrittenProperties*/
-@utility min-h-safe {
-  min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  min-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-}
-/*noinspection CssOverwrittenProperties*/
-@utility h-safe {
-  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+#app-page-shell {
+  padding-top: var(--app-shell-pad-top);
+  padding-bottom: var(--app-shell-pad-bottom);
+  min-height: calc(100vh - var(--app-shell-reserve-bottom-nav)); /* Fallback (no dvh) */
+  min-height: calc(100dvh - var(--app-shell-reserve-bottom-nav));
 }

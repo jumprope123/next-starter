@@ -37,9 +37,7 @@ export function TemplatePlayground() {
 
   return (
     <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold">
-        {t('0004', { fallback: 'State / Data / Form Playground' })}
-      </h2>
+      <h2 className="text-lg font-semibold">{t('0004', { fallback: 'State / Data / Form Playground' })}</h2>
 
       <div className="mt-3 flex items-center gap-3">
         <button
@@ -51,9 +49,7 @@ export function TemplatePlayground() {
         </button>
       </div>
 
-      <div className="mt-3 text-sm text-zinc-700">
-        React Query ping: {pingQuery.data?.now ?? 'loading...'}
-      </div>
+      <div className="mt-3 text-sm text-zinc-700">React Query ping: {pingQuery.data?.now ?? 'loading...'}</div>
 
       <form className="mt-4 flex items-center gap-2" onSubmit={handleSubmit(onSubmit)}>
         <input
