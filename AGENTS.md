@@ -182,6 +182,17 @@ alias: `@/*` → `./src/*`, `#/*` → `./public/*`
 > **페이지 전환 애니메이션은 이 보일러플레이트에 없다.** 커스텀 View Transition 엔진은 OOM / 성능
 > 이슈로 제거되었다 (`core/view-transition`, `styles/view-transitions.css`, `i18n/transition-*`,
 > `i18n/modal-route*`). 전환이 필요하면 Next.js 가 공식 지원하는 기능으로 붙인다.
+>
+> **단, 공식 방식(React `<ViewTransition>` + `<Link transitionTypes>`)도 한 번 시도했다가 되돌렸다**
+> (2026-09-16, 커밋 8f7b1cf → revert 95d2a40). 방향 슬라이드는 동작했지만 **공유 요소 morph 가
+> 될 때도 있고 안 될 때도 있었다.** 계측해 보니 네비게이션 transition 과 도착 콘텐츠 렌더가
+> 일관되게 ~430ms 벌어져, `frame-*` view-transition-name 이 양쪽에 찍히지 않아 공유 쌍 자체가
+> 성립하지 않았다(React 가 자동 이름 `_t_0_` 만 부여). `prefetch={true}` + `generateStaticParams`
+> 로 라우트를 `ƒ` → `●` 로 바꿔 봤지만 이번엔 링크 클릭이 하드 네비게이션으로 떨어졌다.
+> 다시 시도한다면 **도착 페이지가 네비게이션 commit 과 같은 렌더에 마운트되는지** 부터 확인할 것
+> (`[locale]/layout.tsx` 의 fallback 없는 `<Suspense>{children}</Suspense>` 가 유력한 용의자다 —
+> 네비게이션을 콘텐츠 없이 먼저 커밋시킨다). 패턴 가이드는 `npx skills add vercel-labs/agent-skills
+> --skill vercel-react-view-transitions`.
 
 ### Styles (`@/styles`) — 앱형(웹뷰) UX CSS 시스템
 
