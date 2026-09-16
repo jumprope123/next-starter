@@ -1,7 +1,5 @@
 import { fetcher } from '@/core/fetch';
 
-export * from './gallery';
-
 /** `/api/ping` 응답 스키마. 새 프로젝트에서는 자유롭게 교체한다. */
 export type PingResponse = {
   code: number;

@@ -145,7 +145,6 @@ alias: `@/*` → `./src/*`, `#/*` → `./public/*`
 
 | 컴포넌트                            | 역할                                                                                                                                     |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `PageTransition`                    | 방향성 페이지 전환 래퍼 (`nav-forward` / `nav-back`). page.tsx 최상단에만 둔다                                                           |
 | `Polyfill`                          | core-js 폴리필 주입 — **선별 import**. 전체 import(`core-js/actual`)는 gzip +80KB 라 되돌리지 말 것                                      |
 | `MobileDetector`                    | UA 분석 결과를 `useMobileStore` 에 기록                                                                                                  |
 | `Portal`                            | `#next-app-portal` 노드로 children 포털링 (SSR off)                                                                                      |
@@ -180,20 +179,9 @@ alias: `@/*` → `./src/*`, `#/*` → `./public/*`
 - `actions/cookie.actions.ts` — `setCookieAction / getCookieAction / deleteCookieAction` (`httpOnly`, JSON 자동 직렬화).
 - `actions/time.actions.ts` — `getServerTime`. `useServerNow` 훅이 사용.
 
-> **페이지 전환은 Next.js / React 공식 지원(`<ViewTransition>`)으로만 구현한다.**
-> 커스텀 VT 엔진(`document.startViewTransition` 패치 · history 몽키패치 · rAF 루프)은 OOM / 성능
-> 이슈로 제거되었고 되살리지 않는다. 지금 구조는 다음 세 조각뿐이다:
->
-> - `@/components` 의 `<PageTransition>` — 방향성 슬라이드 래퍼. **page.tsx 최상단에만** 둔다
->   (layout 에 두면 페이지의 enter/exit 가 죽는다).
-> - `styles/view-transitions.css` — `.nav-forward` / `.nav-back` / `.morph` / `.text-morph` /
->   `.slide-up` / `.slide-down` + 토스트 격리 + `prefers-reduced-motion`.
-> - 각 `<Link transitionTypes={[...]}>` / `router.push(href, { transitionTypes })` — 방향은 자동
->   추론되지 않는다. 계층 이동에만 붙이고, 탭 전환 같은 수평 이동에는 붙이지 않는다.
->
-> 패턴 가이드는 `.claude/skills/vercel-react-view-transitions/` (Vercel 공식 스킬) 에 있다.
-> 공식 문서와 스킬이 어긋나면 **스킬을 따른다** — 단, API 시그니처/플래그는 `node_modules/next/dist/docs/`
-> 가 authoritative. 데모는 `app/[locale]/gallery/` + `_components/gallery-grid.tsx` + `core/demo/gallery.ts`.
+> **페이지 전환 애니메이션은 이 보일러플레이트에 없다.** 커스텀 View Transition 엔진은 OOM / 성능
+> 이슈로 제거되었다 (`core/view-transition`, `styles/view-transitions.css`, `i18n/transition-*`,
+> `i18n/modal-route*`). 전환이 필요하면 Next.js 가 공식 지원하는 기능으로 붙인다.
 
 ### Styles (`@/styles`) — 앱형(웹뷰) UX CSS 시스템
 
@@ -284,9 +272,8 @@ import { redirect, permanentRedirect } from '@/i18n/server-navigation'; // 서�
 4. `vercel.json` 의 `regions` 확인 (기본값 `icn1`).
 5. `src/app/[locale]/page.tsx` 와 `src/app/[locale]/_components/template-playground.tsx` 는 데모 — 삭제 / 교체.
 6. `src/core/demo/` 와 `src/app/api/ping/` 는 데모 — 새 백엔드를 붙일 때 정리.
-7. `src/app/[locale]/gallery/`, `_components/gallery-grid.tsx`, `core/demo/gallery.ts` 는 View Transition 데모 — 삭제한다. `<PageTransition>` 과 `styles/view-transitions.css` 는 남긴다.
-8. `src/messages/*.json` 의 `template.*` 키를 비우고 실제 카탈로그를 채운다 (`common.*` 키는 보존 권장).
-9. `src/constants/cookie.constants.ts` / `route-path.constants.ts` 를 프로젝트 도메인에 맞게 채운다.
-10. `src/types/environments.d.ts` 의 `ProcessEnv` 에 새 환경 변수 타입을 등록한다.
-11. 사용하지 않는 컴포넌트 / 훅(`useGrabSlide`, `useScrollFadeIn`, `TextMotion`, `AnimatedTimer` 등) 은 폴더의 `index.ts` 에서 export 만 빼는 식으로 "비활성화" 처리하여, 보일러플레이트의 학습 자료 가치를 보존한다.
-12. 이 `AGENTS.md` 는 그대로 두고, 프로젝트 고유 규칙은 파일 끝에 `## Project-specific notes` 섹션으로 추가한다.
+7. `src/messages/*.json` 의 `template.*` 키를 비우고 실제 카탈로그를 채운다 (`common.*` 키는 보존 권장).
+8. `src/constants/cookie.constants.ts` / `route-path.constants.ts` 를 프로젝트 도메인에 맞게 채운다.
+9. `src/types/environments.d.ts` 의 `ProcessEnv` 에 새 환경 변수 타입을 등록한다.
+10. 사용하지 않는 컴포넌트 / 훅(`useGrabSlide`, `useScrollFadeIn`, `TextMotion`, `AnimatedTimer` 등) 은 폴더의 `index.ts` 에서 export 만 빼는 식으로 "비활성화" 처리하여, 보일러플레이트의 학습 자료 가치를 보존한다.
+11. 이 `AGENTS.md` 는 그대로 두고, 프로젝트 고유 규칙은 파일 끝에 `## Project-specific notes` 섹션으로 추가한다.
