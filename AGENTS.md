@@ -155,7 +155,7 @@ alias: `@/*` → `./src/*`, `#/*` → `./public/*`
 | `ClientOnly`                        | hydration 부조화 방지 (마운트 전에는 fallback 렌더)                                                                                      |
 | `ErrorBoundary`                     | 위젯 단위 에러 폴백 (페이지 단위는 `app/.../error.tsx`)                                                                                  |
 | `PressFeedback`                     | 모바일 시스템 앱 스타일 눌림 피드백 (layout 마운트 완료 — 옵트아웃 `data-press-ignore`/`data-press-no-tint`, 옵트인 `data-press-target`) |
-| `CustomPointer`                     | iPadOS 트랙패드 스타일 커스텀 포인터 (마우스 전용 hover+fine, layout 마운트 완료)                                                        |
+| `CustomPointer` | iPadOS 트랙패드 스타일 커스텀 포인터. **layout 에 마운트하지 않음**(기본 커서 유지) — 쓰려면 layout 에서 마운트 |
 
 ### Stores (`@/stores`)
 
@@ -208,7 +208,7 @@ alias: `@/*` → `./src/*`, `#/*` → `./public/*`
   `--spacing-bottom-nav` 는 게이트 시 안전영역만큼 자동 증가), `h-dvh-safe-bottom-enhanced`(전체화면 포털),
   `scrollbar-hidden`, arc 스피너 / `animate-bottom-nav-in` 애니메이션.
 - **눌림 피드백** (`press-feedback.css` + `<PressFeedback />`): `data-pressed` 기반. 스타일/타이밍은 CSS 단일 출처.
-- **커스텀 포인터** (`custom-pointer.css` + `<CustomPointer />`): 마우스 전용 iPadOS 트랙패드 스타일.
+- **커스텀 포인터** (`custom-pointer.css` + `<CustomPointer />`): 마우스 전용 iPadOS 트랙패드 스타일. **기본은 미마운트** — 쓰려면 layout 에 `<CustomPointer />` 를 넣는다.
 - **오버레이 모션** (`overlay-motion.css`): 시트/다이얼로그/vaul duration·easing CSS 변수 단일 출처
   (`--app-sheet-*`, `--app-dialog-*`, `--app-dim-*`). JS 언마운트 타이머는 `@/utils/overlay-motion.ts`.
 - **토스트 모션** (`toast.css`): `app-toast-enter/exit-move/fade` keyframes + `.app-toaster` 겹쳐 덮기.

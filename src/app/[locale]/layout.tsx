@@ -7,7 +7,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import '@/styles/globals.css';
 import { getCookieAction } from '@/actions';
-import { CustomPointer, MobileDetector, Polyfill, PressFeedback } from '@/components';
+import { MobileDetector, Polyfill, PressFeedback } from '@/components';
 import { CookieName } from '@/constants';
 import { BackButtonHandler } from '@/core';
 import { getAppMessages, type Locale } from '@/i18n/messages';
@@ -95,8 +95,10 @@ export default async function LocaleLayout({ children, params }: Readonly<Layout
             {/* 터치/클릭한 요소를 살짝 안으로 눌러 넣는 모바일 시스템 앱 스타일 눌림 피드백.
                 네이티브 탭 하이라이트(-webkit-tap-highlight-color)를 지운 자리를 메운다. */}
             <PressFeedback />
-            {/* iPadOS 트랙패드 스타일 커스텀 포인터 — 마우스 전용(hover+fine), 터치/모바일에선 미표시. */}
-            <CustomPointer />
+            {/* iPadOS 트랙패드 스타일 커스텀 포인터(`<CustomPointer />`)는 마운트하지 않는다 —
+                기본 커서를 바꾸는 연출이 어색하다는 판단. 컴포넌트 / 상수 / CSS 는
+                `@/components/custom-pointer` 와 `styles/custom-pointer.css` 에 그대로 남아 있으니,
+                되살리려면 여기서 다시 마운트하면 된다. */}
           </AppShellProviders>
         </NextIntlClientProvider>
       </body>
