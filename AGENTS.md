@@ -183,16 +183,25 @@ alias: `@/*` → `./src/*`, `#/*` → `./public/*`
 > 이슈로 제거되었다 (`core/view-transition`, `styles/view-transitions.css`, `i18n/transition-*`,
 > `i18n/modal-route*`). 전환이 필요하면 Next.js 가 공식 지원하는 기능으로 붙인다.
 >
-> **단, 공식 방식(React `<ViewTransition>` + `<Link transitionTypes>`)도 한 번 시도했다가 되돌렸다**
-> (2026-09-16, 커밋 8f7b1cf → revert 95d2a40). 방향 슬라이드는 동작했지만 **공유 요소 morph 가
-> 될 때도 있고 안 될 때도 있었다.** 계측해 보니 네비게이션 transition 과 도착 콘텐츠 렌더가
-> 일관되게 ~430ms 벌어져, `frame-*` view-transition-name 이 양쪽에 찍히지 않아 공유 쌍 자체가
-> 성립하지 않았다(React 가 자동 이름 `_t_0_` 만 부여). `prefetch={true}` + `generateStaticParams`
-> 로 라우트를 `ƒ` → `●` 로 바꿔 봤지만 이번엔 링크 클릭이 하드 네비게이션으로 떨어졌다.
-> 다시 시도한다면 **도착 페이지가 네비게이션 commit 과 같은 렌더에 마운트되는지** 부터 확인할 것
-> (`[locale]/layout.tsx` 의 fallback 없는 `<Suspense>{children}</Suspense>` 가 유력한 용의자다 —
-> 네비게이션을 콘텐츠 없이 먼저 커밋시킨다). 패턴 가이드는 `npx skills add vercel-labs/agent-skills
-> --skill vercel-react-view-transitions`.
+> **단, 공식 방식(React `<ViewTransition>` + `<Link transitionTypes>`)도 시도했다가 되돌렸다**
+> (2026-09-16, 커밋 8f7b1cf → revert 95d2a40). **공유 요소 morph 가 될 때도 있고 안 될 때도
+> 있었고, 원인을 규명하지 못했다.**
+>
+> 확인된 사실만 적는다.
+> - 네비게이션 transition 과 도착 콘텐츠 렌더가 일관되게 ~430ms 벌어졌다. 그 사이 전환에 참여한
+>   것은 **떠나는 페이지뿐**이고, 도착 페이지의 `<ViewTransition>` 은 아예 참여하지 않았다
+>   (`frame-*` 이름이 한쪽에도 찍히지 않고 React 자동 이름 `_t_0_` 만 부여됨 = 공유 쌍 미성립).
+> - 아래 가설을 하나씩 검증했고 **전부 기각**됐다:
+>   (a) `[locale]/layout.tsx` 의 fallback 없는 `<Suspense>{children}</Suspense>` — 제거해도 동일.
+>   (b) `#app-page-shell` div 가 페이지의 VT 를 감싸는 배치(스킬의 Critical Placement Rule) — 제거해도 동일.
+>   (c) 동적 라우트 prefetch 부족 — `prefetch={true}` + `generateStaticParams`(ƒ→●) 로도 해결 안 됨.
+>
+> **미해결로 남은 모순:** 자동화 계측에서는 morph 가 100% 실패로 나왔는데 실제 브라우저에서는
+> 간헐적으로 성공했다. 즉 성공 케이스를 재현하지 못했다. 다시 시도한다면 **먼저 성공 케이스를
+> 재현할 방법부터** 찾을 것 — 그게 없으면 가설을 찍는 수밖에 없고, 위 (a)(b)(c) 가 그렇게 빗나갔다.
+> (실험 기록은 로컬 `vt-retry` 브랜치에 남겨 뒀다. 원격에는 없다.)
+>
+> 패턴 가이드: `npx skills add vercel-labs/agent-skills --skill vercel-react-view-transitions`.
 
 ### Styles (`@/styles`) — 앱형(웹뷰) UX CSS 시스템
 
