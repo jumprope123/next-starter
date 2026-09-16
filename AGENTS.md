@@ -20,7 +20,7 @@ outdated — the docs are the source of truth.
 3. **alias 를 일관되게 사용한다.** `@/...` → `src/`, `#/...` → `public/`. 상대 경로는 같은 기능 폴더 내부에서만 허용한다.
 4. **기능을 추가하면 해당 폴더의 `index.ts` 에 export 를 잊지 않는다.**
 5. **Server / Client 컴포넌트 경계를 의식한다.** 클라이언트 훅(`useState`, `useEffect`, zustand, react-query) 을 쓰는 파일은 첫 줄에 `'use client'`.
-6. **i18n 라우팅 / redirect 는 `@/i18n/navigation` 또는 `@/i18n/server-navigation` 에서만 import.** `next/link`, `next/navigation` 직접 사용 금지.
+6. **i18n 라우팅 / redirect 는 `@/i18n/navigation` 또는 `@/i18n/server-navigation` 에서만 import.** `next/link`, `next/navigation` 직접 사용 금지. 예외는 next-intl 이 감싸지 않는 `notFound` / `useSearchParams` 뿐이며, 해당 import 에는 이유를 주석으로 남긴다. (`useRouter` 는 back-stack sentinel 정리까지 해주므로 우회하면 바텀시트 뒤로가기가 깨진다.)
 7. **className 합성은 항상 `cn(...)` 을 사용한다.** (`@/utils/class.ts`)
 
 ## 1. 한눈에
@@ -51,7 +51,7 @@ pnpm build            # 프로덕션 빌드
 pnpm start            # 빌드 결과 실행
 pnpm lint             # ESLint
 pnpm check-types      # next typegen + tsc --noEmit
-pnpm format           # Prettier
+pnpm format           # Prettier (.prettierignore 로 lockfile / package.json 제외)
 pnpm clean            # .next / tsconfig.tsbuildinfo 제거
 ```
 
@@ -75,10 +75,10 @@ src/
 ├── components/     재사용 컴포넌트
 ├── constants/      쿠키 이름 / 라우트 경로 등 정적 상수
 ├── core/           인프라 레벨 (fetchExtended, fetcher, ApiError, createFormData, demo API,
-│                   view-transition 엔진, back-stack 엔진)
+│                   back-stack 엔진)
 ├── hooks/          커스텀 훅
 ├── i18n/           next-intl 설정 (routing, navigation, server-navigation, useAppTranslation, getServerAppTranslation)
-│                   + view transition 방향 추론 / DI 브리지 (transition-direction, modal-routes 등)
+│                   + back-stack DI 브리지 (back-stack-bridge)
 ├── messages/       번역 JSON
 ├── providers/      AppShellProviders, QueryProvider, query-key 팩토리
 ├── proxy.ts        Next.js 16 미들웨어 (next-intl 라우팅)
@@ -94,67 +94,66 @@ alias: `@/*` → `./src/*`, `#/*` → `./public/*`
 
 ### Utils (`@/utils`)
 
-| 모듈              | 주요 export                                                                                                        |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `array`           | `shuffle`, `getChunkedArray`, `filterDuplicateItem`, `deepCopy`                                                    |
-| `boolean`         | `isTrue`                                                                                                           |
-| `class`           | `cn` (clsx + tailwind-merge)                                                                                       |
-| `clipboard`       | `copyToClipboard`                                                                                                  |
-| `date`            | `secondsToMinutes`, `getElapsedTime`                                                                               |
-| `device`          | `isTouchDevice`                                                                                                    |
-| `download`        | `downloadFile`                                                                                                     |
-| `element`         | `getHighlightedText`                                                                                               |
-| `env`             | `isServer`, `isClient`, `isDevelopment`, `isProduction`, `isTest`                                                  |
-| `format`          | `toNumber`, `formatNumber`, `joinValueUnit`, `formatPhoneNumber`, `phoneNumberUtil`, `formatDate`, `calculateDday` |
-| `keyboard`        | `isEnter` (IME 대응)                                                                                               |
-| `meta`            | `staticMetadata`, `shareCurrentPage`                                                                               |
-| `next`            | `allowCors` (Route Handler CORS 래퍼)                                                                              |
-| `number`          | `clamp`, `range`, `lerp`                                                                                           |
-| `object`          | `compareAllKeys`, `hasAllValues`, `withSubComponents`, `pick`, `omit`, `removeUndefined`                           |
-| `promise`         | `getFulfilledResults`, `getRejectedResults`, `sleep`, `withTimeout`, `retry`                                       |
-| `query`           | `isValidQuery`, `addToQuery`, `removeFromQuery`, `createHrefQuery`                                                 |
-| `ref`             | `mergeRefs`                                                                                                        |
-| `storage`         | `storage` (localStorage), `sessionStorage` (둘 다 SSR-safe + JSON 자동 직렬화)                                     |
-| `overlay-motion`  | `SHEET_EXIT_DURATION_MS`, `DIALOG_EXIT_DURATION_MS`, `afterNextPaint` (오버레이 언마운트 타이머 — CSS 변수와 짝)  |
-| `type`            | `assertNever`, `isObject`, `isNotNullish`                                                                          |
-| `view-transition` | `waitForViewTransitionEnd` (진행 중인 View Transition 종료까지 대기)                                               |
+| 모듈             | 주요 export                                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `array`          | `shuffle`, `getChunkedArray`, `filterDuplicateItem`, `deepCopy`                                                    |
+| `boolean`        | `isTrue`                                                                                                           |
+| `class`          | `cn` (clsx + tailwind-merge)                                                                                       |
+| `clipboard`      | `copyToClipboard`                                                                                                  |
+| `date`           | `secondsToMinutes`, `getElapsedTime`                                                                               |
+| `device`         | `isTouchDevice`                                                                                                    |
+| `download`       | `downloadFile`                                                                                                     |
+| `element`        | `getHighlightedText`                                                                                               |
+| `env`            | `isServer`, `isClient`, `isDevelopment`, `isProduction`, `isTest`                                                  |
+| `format`         | `toNumber`, `formatNumber`, `joinValueUnit`, `formatPhoneNumber`, `phoneNumberUtil`, `formatDate`, `calculateDday` |
+| `keyboard`       | `isEnter` (IME 대응)                                                                                               |
+| `meta`           | `staticMetadata`, `shareCurrentPage`                                                                               |
+| `next`           | `allowCors` (Route Handler CORS 래퍼)                                                                              |
+| `number`         | `clamp`, `range`, `lerp`                                                                                           |
+| `object`         | `compareAllKeys`, `hasAllValues`, `withSubComponents`, `pick`, `omit`, `removeUndefined`                           |
+| `promise`        | `getFulfilledResults`, `getRejectedResults`, `sleep`, `withTimeout`, `retry`                                       |
+| `query`          | `isValidQuery`, `addToQuery`, `removeFromQuery`, `createHrefQuery`                                                 |
+| `ref`            | `mergeRefs`                                                                                                        |
+| `storage`        | `storage` (localStorage), `sessionStorage` (둘 다 SSR-safe + JSON 자동 직렬화)                                     |
+| `overlay-motion` | `SHEET_EXIT_DURATION_MS`, `DIALOG_EXIT_DURATION_MS`, `afterNextPaint` (오버레이 언마운트 타이머 — CSS 변수와 짝)   |
+| `type`           | `assertNever`, `isObject`, `isNotNullish`                                                                          |
 
 ### Hooks (`@/hooks`)
 
-| 훅                                 | 역할                                                                                                                                        |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useMedia`                         | Tailwind `sm/md/lg/xl` 매칭 → zustand 동기화                                                                                                |
-| `useContainer`                     | 와이드 화면(>1920px) 좌우 균등 padding 계산                                                                                                 |
-| `useFocusScroll`                   | 가로 스크롤 컨테이너에서 특정 자식 위치로 스크롤                                                                                            |
-| `useOnClickOutside`                | ref 외부 mouseup 감지                                                                                                                       |
-| `useScrollPage`                    | 가로 캐러셀의 페이지 인덱스 추적 / 이동                                                                                                     |
-| `useScrollFadeIn`                  | GSAP ScrollTrigger 페이드 인                                                                                                                |
-| `useGrabSlide`                     | 마우스 드래그로 가로 스크롤 조작                                                                                                            |
-| `useAllSearchParams`               | `URLSearchParams` → 객체 변환                                                                                                               |
-| `useSearchQuery`                   | URL 쿼리 읽기 / 쓰기 / 리셋                                                                                                                 |
-| `useServerNow`                     | 서버 시간 기준 1 초 단위 `now` 갱신                                                                                                         |
-| `useDisclosure`                    | 모달/시트/드롭다운 토글 (`isOpen / open / close / toggle`)                                                                                  |
-| `useToggle`                        | 단순 boolean 토글 (`[value, toggle, set]`)                                                                                                  |
-| `useMounted`                       | hydration 이후 마운트 여부                                                                                                                  |
-| `useDebouncedValue`                | 입력 값을 디바운스해 안정적인 값 반환                                                                                                       |
-| `useCopyToClipboard`               | 복사 + `isCopied` 피드백 상태                                                                                                               |
-| `useDismissOnBack`                 | **뒤로가기(브라우저/안드 back)로 모달·바텀시트 닫기.** `useDismissOnBack(isOpen, close)` — history sentinel 자동 관리 (`@/core` back-stack) |
-| `useDeferOpenDuringViewTransition` | 자동 오픈 모달의 `open` 을 View Transition 종료까지 지연 (전환 스냅샷에 덮이는 깜빡임 방지)                                                 |
-| `useScrollLock`                    | body 스크롤 락 — 참조 카운팅 + `body.app-scroll-locked` 클래스 토글 (3rd-party inline overflow 와 직교)                                     |
+| 훅                    | 역할                                                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useMedia`            | Tailwind `sm/md/lg/xl` 매칭 → zustand 동기화                                                                                                |
+| `useContainer`        | 와이드 화면(>1920px) 좌우 균등 padding 계산                                                                                                 |
+| `useFocusScroll`      | 가로 스크롤 컨테이너에서 특정 자식 위치로 스크롤                                                                                            |
+| `useOnClickOutside`   | ref 외부 mouseup 감지                                                                                                                       |
+| `useScrollPage`       | 가로 캐러셀의 페이지 인덱스 추적 / 이동                                                                                                     |
+| `useScrollFadeIn`     | GSAP ScrollTrigger 페이드 인                                                                                                                |
+| `useGrabSlide`        | 마우스 드래그로 가로 스크롤 조작                                                                                                            |
+| `useAllSearchParams`  | `URLSearchParams` → 객체 변환                                                                                                               |
+| `useSearchQuery`      | URL 쿼리 읽기 / 쓰기 / 리셋                                                                                                                 |
+| `useServerNow`        | 서버 시간 기준 1 초 단위 `now` 갱신                                                                                                         |
+| `useDisclosure`       | 모달/시트/드롭다운 토글 (`isOpen / open / close / toggle`)                                                                                  |
+| `useToggle`           | 단순 boolean 토글 (`[value, toggle, set]`)                                                                                                  |
+| `useMounted`          | hydration 이후 마운트 여부                                                                                                                  |
+| `useDebouncedValue`   | 입력 값을 디바운스해 안정적인 값 반환                                                                                                       |
+| `useCopyToClipboard`  | 복사 + `isCopied` 피드백 상태                                                                                                               |
+| `useDismissOnBack`    | **뒤로가기(브라우저/안드 back)로 모달·바텀시트 닫기.** `useDismissOnBack(isOpen, close)` — history sentinel 자동 관리 (`@/core` back-stack) |
+| `useScrollLock`       | body 스크롤 락 — 참조 카운팅 + `body.app-scroll-locked` 클래스 토글 (3rd-party inline overflow 와 직교)                                     |
+| `useSettingsHydrated` | 영속 store(zustand persist) 복원 완료 여부 — 기본값→복원값 전환을 감추고 싶을 때 게이트로 쓴다                                              |
 
 ### Components (`@/components`)
 
-| 컴포넌트                            | 역할                                                    |
-| ----------------------------------- | ------------------------------------------------------- |
-| `Polyfill`                          | core-js 폴리필을 클라이언트 번들에 1 회 주입            |
-| `MobileDetector`                    | UA 분석 결과를 `useMobileStore` 에 기록                 |
-| `Portal`                            | `#next-app-portal` 노드로 children 포털링 (SSR off)     |
-| `NextImage` / `NextImage.Protected` | `next/image` 래퍼 (비율 / fallback / 우클릭 보호)       |
-| `AnimatedTimer`                     | 두 자리 숫자 슬라이드 카운터 (framer-motion)            |
-| `TextMotion`                        | 텍스트 순환 + 글자 스태거 모션                          |
-| `Skeleton`                          | `react-loading-skeleton` 얇은 래퍼                      |
-| `ClientOnly`                        | hydration 부조화 방지 (마운트 전에는 fallback 렌더)     |
-| `ErrorBoundary`                     | 위젯 단위 에러 폴백 (페이지 단위는 `app/.../error.tsx`) |
+| 컴포넌트                            | 역할                                                                                                                                     |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `Polyfill`                          | core-js 폴리필 주입 — **선별 import**. 전체 import(`core-js/actual`)는 gzip +80KB 라 되돌리지 말 것                                      |
+| `MobileDetector`                    | UA 분석 결과를 `useMobileStore` 에 기록                                                                                                  |
+| `Portal`                            | `#next-app-portal` 노드로 children 포털링 (SSR off)                                                                                      |
+| `NextImage` / `NextImage.Protected` | `next/image` 래퍼 (비율 / fallback / 우클릭 보호)                                                                                        |
+| `AnimatedTimer`                     | 두 자리 숫자 슬라이드 카운터 (framer-motion)                                                                                             |
+| `TextMotion`                        | 텍스트 순환 + 글자 스태거 모션                                                                                                           |
+| `Skeleton`                          | `react-loading-skeleton` 얇은 래퍼                                                                                                       |
+| `ClientOnly`                        | hydration 부조화 방지 (마운트 전에는 fallback 렌더)                                                                                      |
+| `ErrorBoundary`                     | 위젯 단위 에러 폴백 (페이지 단위는 `app/.../error.tsx`)                                                                                  |
 | `PressFeedback`                     | 모바일 시스템 앱 스타일 눌림 피드백 (layout 마운트 완료 — 옵트아웃 `data-press-ignore`/`data-press-no-tint`, 옵트인 `data-press-target`) |
 | `CustomPointer`                     | iPadOS 트랙패드 스타일 커스텀 포인터 (마우스 전용 hover+fine, layout 마운트 완료)                                                        |
 
@@ -167,14 +166,22 @@ alias: `@/*` → `./src/*`, `#/*` → `./public/*`
 | `useLocalSettingsStore`   | localStorage 영구 저장 (`isDarkMode` 예시)                             |
 | `useSessionSettingsStore` | sessionStorage 보존 (`isLaunched` 예시)                                |
 
+> 영속 store 두 개는 `skipHydration: true` 이고 `<SettingsHydrator />` (layout 마운트 완료) 가 첫 페인트
+> 이후에 복원한다. persist 의 기본 동작(모듈 평가 시점 동기 복원)은 SSR 결과와 클라이언트 첫 렌더를
+> 어긋나게 해 **hydration mismatch** 를 일으키므로 되돌리지 말 것.
+
 ### Core / Actions
 
-- `core/fetch.ts` — `fetchExtended` (4xx/5xx 자동 `ApiError` throw), `fetcher<T>` (`/proxy/app` 자동 prefix + JSON 파싱), `createFormData`, `ApiError` 클래스.
-- `core/view-transition` — iOS 스타일 페이지 전환 엔진. `PageViewTransition` (React `<ViewTransition>` 래퍼 + `startViewTransition` 패치: 입력 락 / 스크롤 보정 / hung 회수), `PopstateViewTransitionNotifier` + popstate 인수 엔진 (back/forward 에도 슬라이드), `TAB_ORDER`/`getTabLateralDirection` (하단 탭 lateral), `getHistoryEntryIndex`. 키프레임은 `styles/view-transitions.css`. 둘 다 layout 에 이미 마운트되어 있어 **페이지를 추가하면 전환은 자동으로 동작한다.**
-- `core/back-stack` — 뒤로가기 모달 닫기 엔진. `pushBackHandler` (history sentinel + onClose 등록), `BackButtonHandler` (layout 마운트 완료), `isCurrentEntrySentinel` (sentinel 위에서는 push 대신 replace), `consumeBack`/`setBackFallback` (네이티브 WebView back 브릿지용). 소비자는 보통 `useDismissOnBack` 훅만 쓰면 된다.
+- `core/fetch.ts` — `fetchExtended` (4xx/5xx 자동 `ApiError` throw), `fetcher<T>` (`/proxy/app` 자동 prefix + JSON 파싱), `createFormData`, `ApiError` 클래스. **`fetcher` 의 `data` 는 `T | null`** — 204 / 비-JSON 응답에서는 null 이므로 호출부에서 반드시 확인한다.
+- `core/back-stack` — 뒤로가기 모달 닫기 엔진. `pushBackHandler` (history sentinel + onClose 등록), `BackButtonHandler` (layout 마운트 완료), `isCurrentEntrySentinel` (sentinel 위에서는 push 대신 replace), `consumeBack`/`setBackFallback` (네이티브 WebView back 브릿지용). `history-entry-index.ts` 가 `pushState/replaceState` 에 위치 인덱스를 스탬프해 sentinel 판정과 흡수 방향을 정확히 한다. 소비자는 보통 `useDismissOnBack` 훅만 쓰면 된다.
+
 - `core/demo` — `getPing` (`/api/ping`) 데모. 새 프로젝트에서 가장 먼저 지우거나 교체할 곳.
 - `actions/cookie.actions.ts` — `setCookieAction / getCookieAction / deleteCookieAction` (`httpOnly`, JSON 자동 직렬화).
 - `actions/time.actions.ts` — `getServerTime`. `useServerNow` 훅이 사용.
+
+> **페이지 전환 애니메이션은 이 보일러플레이트에 없다.** 커스텀 View Transition 엔진은 OOM / 성능
+> 이슈로 제거되었다 (`core/view-transition`, `styles/view-transitions.css`, `i18n/transition-*`,
+> `i18n/modal-route*`). 전환이 필요하면 Next.js 가 공식 지원하는 기능으로 붙인다.
 
 ### Styles (`@/styles`) — 앱형(웹뷰) UX CSS 시스템
 
@@ -193,16 +200,15 @@ alias: `@/*` → `./src/*`, `#/*` → `./public/*`
 - **커스텀 포인터** (`custom-pointer.css` + `<CustomPointer />`): 마우스 전용 iPadOS 트랙패드 스타일.
 - **오버레이 모션** (`overlay-motion.css`): 시트/다이얼로그/vaul duration·easing CSS 변수 단일 출처
   (`--app-sheet-*`, `--app-dialog-*`, `--app-dim-*`). JS 언마운트 타이머는 `@/utils/overlay-motion.ts`.
-- **토스트 모션** (`toast.css`): `app-toast-enter/exit-move/fade` keyframes + `.app-toaster` 겹쳐 덮기 + VT group 분리.
+- **토스트 모션** (`toast.css`): `app-toast-enter/exit-move/fade` keyframes + `.app-toaster` 겹쳐 덮기.
 - **글로벌 리셋** (globals.css 본문): iOS 롱프레스 콜아웃 차단(입력 요소는 복원), 이미지/링크 드래그 차단,
   오버스크롤(rubber-band) 차단, 폼 UA 포커스 링 제거, `body.app-scroll-locked` 스크롤 락.
-- **View Transition 키프레임** (`view-transitions.css`): `@/core/view-transition` 참조.
 
 ### Providers
 
 ```text
 <NextIntlClientProvider>           // [locale]/layout.tsx
-  <AppShellProviders>              // app-shell-providers.tsx (부트 시 modal-routes / transition-suppressed-routes 등록)
+  <AppShellProviders>              // app-shell-providers.tsx
     <QueryProvider>                // QueryClient lazy init (SSR/CSR 격리)
       <NuqsAdapter>{children}</NuqsAdapter>
       <Toaster containerClassName="app-toaster" />
@@ -236,14 +242,7 @@ import { Link, useRouter, usePathname } from '@/i18n/navigation'; // 클라이�
 import { redirect, permanentRedirect } from '@/i18n/server-navigation'; // 서버 (await 필수)
 ```
 
-- **View Transition 자동 주입**: 위 `Link` / `useRouter().push·replace` 는 경로 depth 를 비교해
-  `transitionTypes` (nav-forward / nav-back / nav-lateral-* / nav-fade) 를 자동 추론·주입한다
-  (`i18n/transition-direction.ts`). 명시 지정은 `transitionTypes={['nav-fade']}`, 끄기는 `transitionTypes={[]}`.
-  `router.replace` 는 열린 모달의 sentinel 을 자동으로 pop 한 뒤 replace 한다.
-- **전환 정책 등록 파일** (부트 시 `AppShellProviders` 가 side-effect import):
-  - `i18n/modal-routes.ts` — intercepting modal route 패턴 등록 (해당 경로는 슬라이드 미적용)
-  - `i18n/transition-suppressed-routes.ts` — 특정 라우트 쌍 사이 전환 끄기/fade 전환 등록
-  - `core/view-transition/tab-transition.ts` 의 `TAB_ORDER` — 하단 탭 좌→우 순서 (lateral 슬라이드 방향)
+- `router.replace` 는 열린 모달의 back-stack sentinel 을 자동으로 pop 한 뒤 replace 한다.
 
 - 로케일 추가: `routing.ts` 의 `locales` 에 코드 추가 → `messages/<code>.json` 작성 → `messages.ts` 의 `messagesByLocale` 에 등록.
 

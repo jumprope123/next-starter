@@ -21,14 +21,16 @@ export const getRejectedResults = <T>(result: PromiseSettledResult<T>[]) =>
  * 지정한 시간(ms) 동안 대기하는 비동기 헬퍼.
  *
  * `setTimeout` 을 Promise 로 감싼 단순 슬립이며, 테스트 코드나 디바운스 시뮬레이션 등에
- * 사용한다. 반환되는 Promise 의 값은 `setTimeout` 핸들이지만 실사용은 거의 없다.
+ * 사용한다.
  *
  * @param delay 대기할 밀리초
  * @example
  * await sleep(300); // 300ms 대기 후 다음 줄 실행
  */
-export const sleep = async (delay: number): Promise<NodeJS.Timeout> =>
-  new Promise((resolve) => setTimeout(resolve, delay));
+export const sleep = (delay: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, delay);
+  });
 
 /**
  * Promise 에 타임아웃을 부여한다.
@@ -44,10 +46,17 @@ export const withTimeout = <T>(
   ms: number,
   errorMessage: string = `Promise timed out after ${ms}ms`
 ): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  // 타이머를 반드시 해제한다 — 정리하지 않으면 promise 가 먼저 끝나도 `ms` 동안 콜백과
+  // 그 클로저가 살아남아, 타임아웃이 긴 호출을 반복할수록 대기 중인 타이머가 쌓인다.
   return Promise.race<T>([
     promise,
-    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(errorMessage)), ms)),
-  ]);
+    new Promise<T>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(errorMessage)), ms);
+    }),
+  ]).finally(() => {
+    if (timer !== undefined) clearTimeout(timer);
+  });
 };
 
 /**

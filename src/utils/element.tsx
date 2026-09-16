@@ -1,4 +1,4 @@
-import { cn } from '@/utils';
+import { cn } from './class';
 
 /**
  * 텍스트 안에서 검색어와 일치하는 부분을 `<span>`으로 감싸 강조 표시한다.

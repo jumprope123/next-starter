@@ -17,6 +17,8 @@ export type PingResponse = {
  */
 export const getPing = async () => {
   const { data } = await fetcher<PingResponse>('/api/ping');
+  // `fetcher` 는 본문이 없거나 JSON 이 아니면 null 을 준다 — 곧바로 프로퍼티에 접근하면 TypeError.
+  if (!data) throw new Error('ping response is empty');
   if (data.code !== 200) throw new Error(data.message);
   return data.data;
 };

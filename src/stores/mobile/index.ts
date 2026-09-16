@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { MobileStore } from '.';
+import type { MobileStore } from './index.type';
 
 export * from './index.type';
 

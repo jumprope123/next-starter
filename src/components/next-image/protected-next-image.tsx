@@ -1,6 +1,6 @@
 import { ComponentProps, ReactNode } from 'react';
 import { cn } from '@/utils';
-import { OriginNextImage } from '@/components';
+import { OriginNextImage } from './origin-next-image';
 
 /**
  * `OriginNextImage` 를 감싸 우클릭/드래그/길게 누르기 저장을 차단하는 변형.

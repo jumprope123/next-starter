@@ -19,4 +19,3 @@ export * from './query';
 export * from './ref';
 export * from './storage';
 export * from './type';
-export * from './view-transition';

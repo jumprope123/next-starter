@@ -2,6 +2,8 @@
 
 import { useMemo } from 'react';
 
+// 예외적으로 `next/navigation` 을 직접 쓴다 — 쿼리스트링은 locale 과 무관해 next-intl 이
+// 감싸지 않으며, 대체 export 도 없다. (Link / useRouter / usePathname 은 `@/i18n/navigation`.)
 import { useSearchParams } from 'next/navigation';
 import { isValidQuery } from '@/utils';
 import { ParsedUrlQuery } from '@/types';

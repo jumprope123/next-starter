@@ -137,6 +137,9 @@ export type DateFormatType = 'dot' | 'dot-time' | 'korean' | 'korean-time';
 export const formatDate = (date: Date | string | null, formatType: DateFormatType = 'dot'): string => {
   if (!date) return '';
   const dateObj = typeof date === 'string' ? new Date(date) : date;
+  // 파싱 불가능한 문자열은 빈 문자열로 흘려보낸다 — date-fns 의 `format` 은 Invalid Date 에
+  // RangeError 를 던지므로, 가드가 없으면 잘못된 API 응답 하나가 페이지 전체를 error boundary 로 보낸다.
+  if (Number.isNaN(dateObj.getTime())) return '';
 
   if (formatType === 'korean') return format(dateObj, 'yyyy년 M월 d일');
   if (formatType === 'korean-time') return format(dateObj, 'yyyy년 M월 d일 HH:mm');
@@ -153,6 +156,7 @@ export const formatDate = (date: Date | string | null, formatType: DateFormatTyp
 export const calculateDday = (date: Date | string | null): number => {
   if (!date) return 0;
   const dateObj = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(dateObj.getTime())) return 0;
   const diffTime = Math.abs(dateObj.getTime() - Date.now());
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };

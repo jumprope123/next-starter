@@ -1,10 +1,5 @@
 'use client';
 
-// 부트 시점 사이드이펙트: modal route / transition 억제 쌍을 전환 엔진에 등록한다.
-// (import 만으로 module-level 등록이 실행된다 — 각 파일의 주석 참조.)
-import '@/i18n/modal-routes';
-import '@/i18n/transition-suppressed-routes';
-
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import type { PropsWithChildren } from 'react';
 import { Toaster } from 'react-hot-toast';
@@ -21,7 +16,7 @@ export function AppShellProviders({ children }: Readonly<PropsWithChildren>) {
   return (
     <QueryProvider>
       <NuqsAdapter>{children}</NuqsAdapter>
-      {/* containerClassName="app-toaster": 토스트 겹쳐 덮기 + View Transition group 분리 (styles/toast.css) */}
+      {/* containerClassName="app-toaster": 토스트 겹쳐 덮기 (styles/toast.css) */}
       <Toaster position="bottom-center" containerClassName="app-toaster" />
     </QueryProvider>
   );

@@ -16,16 +16,23 @@ import { Metadata } from 'next';
  * });
  */
 export function staticMetadata(meta: Metadata): Metadata {
-  return {
-    ...meta,
-    title: `${meta.title}`,
-    description: `${meta.description}`,
-    openGraph: {
-      ...meta.openGraph,
-      images: meta.openGraph?.images,
-    },
-    keywords: [...(typeof meta.keywords === 'string' ? [meta.keywords] : meta.keywords || [])],
-  };
+  const result: Metadata = { ...meta };
+
+  // 미지정 필드는 **키 자체를 제거**한다. 템플릿 리터럴로 무조건 문자열화하면 undefined 가
+  // 문자열 "undefined" 가 되어 `<meta name="description" content="undefined">` 로 렌더된다.
+  if (meta.title == null) delete result.title;
+  // title 은 `{ default, template }` 형태(TemplateString)도 유효하므로 객체는 그대로 둔다.
+  else if (typeof meta.title !== 'object') result.title = `${meta.title}`;
+
+  if (meta.description == null) delete result.description;
+
+  if (meta.keywords == null) delete result.keywords;
+  else result.keywords = typeof meta.keywords === 'string' ? [meta.keywords] : [...meta.keywords];
+
+  // openGraph 미지정 시 빈 객체를 만들지 않는다 (빈 og 블록이 렌더되는 것을 방지).
+  if (!meta.openGraph) delete result.openGraph;
+
+  return result;
 }
 
 /**

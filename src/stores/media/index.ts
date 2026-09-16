@@ -1,7 +1,8 @@
 'use client';
 
 import { create } from 'zustand';
-import { MEDIA_STORE_DEFAULT_VALUE, MediaStore } from '.';
+import { MEDIA_STORE_DEFAULT_VALUE } from './index.constants';
+import type { MediaStore } from './index.type';
 
 export * from './index.type';
 export * from './index.constants';

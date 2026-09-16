@@ -107,8 +107,15 @@ export const hasAllValues = <T extends Record<string, unknown>>(obj: T): boolean
       return false;
     }
 
-    if (typeof value === 'object' && Object.keys(value).length === 0) {
-      return false;
+    if (typeof value === 'object') {
+      // Map / Set 은 크기로 판정한다 (`Object.keys` 는 항상 빈 배열).
+      if (value instanceof Map || value instanceof Set) return value.size > 0;
+      // Date / File / Blob / 클래스 인스턴스처럼 열거 가능한 키가 없는 내장 객체는
+      // "값이 있다" 로 본다 — 예전 구현은 `new Date()` 를 빈 값으로 오판해
+      // 생년월일 하나만 있어도 폼 제출이 영영 막혔다.
+      const prototype = Object.getPrototypeOf(value) as object | null;
+      const isPlainObject = prototype === Object.prototype || prototype === null;
+      if (isPlainObject && Object.keys(value).length === 0) return false;
     }
 
     return true;

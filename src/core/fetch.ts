@@ -94,16 +94,27 @@ export const fetchExtended = returnFetch({
  * - 응답을 한 번 `clone()` 한 뒤 JSON 으로 파싱해 `data` 와 원본 `response` 를 함께 반환한다.
  *   호출 측이 헤더/스테이터스가 더 필요하면 `response` 를, 본문만 쓰고 싶으면 `data` 를 사용한다.
  *
+ * **`data` 는 `T | null` 이다.** 204 No Content 나 비-JSON 성공 응답에서는 `null` 이 되므로
+ * 호출 측에서 반드시 확인한다 — 예전 구현은 `as T` 로 단언해 `data.foo` 접근이 런타임에
+ * TypeError 로 터졌다. 본문이 항상 있다고 보장되는 엔드포인트라면 호출 측에서 좁히면 된다.
+ *
  * 인증이 필요한 호출은 `init.auth: 'required'` 로 표식만 남기고, 실제 토큰 주입은
  * 프로젝트별 인터셉터(혹은 NextAuth 어댑터) 에서 처리한다.
  *
  * @example
  * const { data } = await fetcher<PingResponse>('/api/ping');
+ * if (!data) throw new Error('empty response');
  * const { data } = await fetcher<UserDto>('/users/me', { auth: 'required' });
  */
-export const fetcher = async <T>(url: URL | RequestInfo, init?: (RequestInit & { auth?: FetcherAuth }) | undefined) => {
-  const { auth = false, ...options } = { ...init };
-  const requestUrl = getRequestUrl({ url, auth });
+export const fetcher = async <T>(
+  url: URL | RequestInfo,
+  init?: (RequestInit & { auth?: FetcherAuth }) | undefined
+): Promise<{ response: Response; data: T | null }> => {
+  // `auth` 는 RequestInit 이 아니므로 구조분해로 걸러내 fetch 로 흘러가지 않게 한다.
+  // (현재는 표식 전용 — 실제 토큰 주입은 프로젝트별 인터셉터가 담당한다.)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 의도적으로 버리는 키
+  const { auth, ...options } = { ...init };
+  const requestUrl = getRequestUrl(url);
   const headers = new Headers(options.headers ?? undefined);
   if (!headers.has('Accept')) headers.set('Accept', 'application/json');
 
@@ -112,12 +123,12 @@ export const fetcher = async <T>(url: URL | RequestInfo, init?: (RequestInit & {
   const data = (await response
     .clone()
     .json()
-    .catch(() => null)) as T;
+    .catch(() => null)) as T | null;
 
   return { response, data };
 };
 
-const getRequestUrl = ({ url }: { url: URL | RequestInfo; auth: FetcherAuth }) => {
+const getRequestUrl = (url: URL | RequestInfo) => {
   const path = url.toString();
   if (path.startsWith('/api')) return path;
   if (path.startsWith('/proxy/')) return path;

@@ -1,7 +1,7 @@
 /*
  * 전역 스타일 단일 진입점.
  * 모든 partial 을 여기서 한 번씩만 import 한다 — partial 끼리 서로 import 하지 않는다.
- * 순서: 토큰(:root 변수) → @theme/유틸 → safe-area 게이트(플러그인 뒤) → 페이지 전환 → 연출 → 글로벌 리셋.
+ * 순서: 토큰(:root 변수) → @theme/유틸 → safe-area 게이트(플러그인 뒤) → 연출 → 글로벌 리셋.
  */
 @import 'tailwindcss';
 @import 'tailwindcss-safe-area';
@@ -15,7 +15,6 @@
 /* tailwindcss-safe-area 의 --twsa-safe-area-inset-* 변수를 게이트로 덮어쓴다.
    반드시 위 @import "tailwindcss-safe-area" 이후에 와서 기본 :root(env()) 정의를 이긴다. */
 @import './safe-area.css';
-@import './view-transitions.css';
 @import './custom-pointer.css';
 @import './press-feedback.css';
 @import './toast.css';
@@ -47,8 +46,7 @@ body {
  *     Android `webView.overScrollMode = OVER_SCROLL_NEVER`.
  *
  * 가로 축도 차단 — 가로 스크롤 리스트를 끝에서 더 당기면 문서로 체이닝된 가로 rubber-band 가
- * 페이지를 통째로 끌어내 뒤 배경이 드러난다. popstate View Transition 중 브라우저 기본
- * 스와이프 내비게이션 글로우가 끼어드는 것도 함께 막는다.
+ * 페이지를 통째로 끌어내 뒤 배경이 드러난다.
  * 내부 스크롤 컨테이너(overscroll-contain 등)는 문서 스크롤러와 별개라 영향 없음.
  */
 html {

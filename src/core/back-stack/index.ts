@@ -6,7 +6,6 @@ export {
   isCurrentEntrySentinel,
   pushBackHandler,
   setBackFallback,
-  setLastPopstateDirection,
   suppressNextPopstate,
   type BackHandler,
 } from './back-stack';

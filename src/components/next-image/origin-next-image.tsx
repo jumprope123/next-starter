@@ -81,7 +81,10 @@ export function OriginNextImage({
   fallbackSrc,
   ...props
 }: Readonly<Props>): ReactNode {
-  const [isError, setIsError] = useState<boolean>(!src);
+  // 실패한 src 자체를 기억한다 — boolean 플래그로 두면 src 가 새 값으로 바뀌어도 에러 상태가
+  // 그대로 남아, 한 번 로드에 실패한 인스턴스는 유효한 이미지를 받아도 영영 복구되지 않는다.
+  const [failedSrc, setFailedSrc] = useState<Props['src'] | null>(null);
+  const isError = !src || failedSrc === src;
 
   const style: CSSProperties = useMemo(() => {
     const obj: CSSProperties = { objectFit: isError ? 'contain' : objectFit, ...imageStyle };
@@ -95,16 +98,15 @@ export function OriginNextImage({
   const renderSrc = useMemo(() => {
     if (!isError) return src;
 
-    // 이미지 오류 시 처리
-    if (fallbackSrc) {
-      return fallbackSrc; // 지정된 Fallback 이미지 로드, 필요시 이미지 추가 후 사용
-    } else if (fallbackAspectRatio === 'square') {
+    // 이미지 오류 시 처리 — 프로젝트별 기본 폴백 이미지를 쓰려면 아래 분기에서 import 한
+    // 정적 이미지를 반환하도록 바꾼다 (`fallbackAspectRatio` 로 비율을 고른다).
+    if (fallbackSrc) return fallbackSrc;
+    if (fallbackAspectRatio === 'square') {
       // return fallbackSquare; // 정사각형 Fallback 이미지 로드, 필요시 이미지 추가 후 사용
-      return fallbackSrc;
-    } else if (fallbackAspectRatio === 'landscape') {
-      // return fallbackLandscape; // 가로 직사각형 Fallback 이미지 로드, 필요시 이미지 추가 후 사용
-      return fallbackSrc;
+      return undefined;
     }
+    // return fallbackLandscape; // 가로 직사각형 Fallback 이미지 로드, 필요시 이미지 추가 후 사용
+    return undefined;
   }, [fallbackAspectRatio, fallbackSrc, isError, src]);
 
   const isRemoteImage = typeof renderSrc === 'string' && renderSrc.startsWith('http');
@@ -117,13 +119,16 @@ export function OriginNextImage({
 
   const handleError = useCallback(
     (e: SyntheticEvent<HTMLImageElement, Event>) => {
-      setIsError(true);
+      setFailedSrc(src ?? null);
       onError?.(e);
     },
-    [onError]
+    [onError, src]
   );
 
-  const element = renderSrc ? (
+  // 표시할 이미지가 없으면(에러 + 폴백 미지정) 아무것도 그리지 않는다.
+  if (!renderSrc) return null;
+
+  const element = (
     <Image
       src={renderSrc}
       alt={alt}
@@ -139,9 +144,7 @@ export function OriginNextImage({
       onError={handleError}
       {...props}
     />
-  ) : null;
-
-  if (!renderSrc) return null;
+  );
 
   return (
     <div

@@ -35,7 +35,7 @@
 
 import { registerBackStackBridge } from '@/i18n/back-stack-bridge';
 
-import { getHistoryEntryIndex } from './history-entry-index';
+import { getHistoryEntryIndex, getLastPopstateDirection } from './history-entry-index';
 
 const SENTINEL_KEY = '__appBack';
 
@@ -60,27 +60,6 @@ let suppressNextPop = 0;
 let staleSentinelCount = 0;
 
 /**
- * 직전 popstate 의 진행 방향 ('back' = 인덱스 감소, 'forward' = 인덱스 증가).
- * `@/core/view-transition` 의 popstate-view-transition 이 위치 인덱스를 비교해 매 popstate 마다
- * 갱신한다 (그 모듈이 pushState 까지 추적하고 우리보다 먼저 실행돼 인덱스가 항상 정확하다).
- *
- * stale/sandwich sentinel 을 건너뛸 때 어느 방향으로 흡수할지 결정하는 데 쓴다. forward 로
- * 이동하다 묻혀 있던 sentinel 을 만나면 history.back() 으로 되돌리면 안 되고 history.forward() 로
- * 지나쳐야 도착 라우트로 갈 수 있다. 신호가 없을 때의 기본값은 'back' — sentinel 흡수의 기존
- * 동작을 그대로 보존한다.
- */
-let lastPopstateDirection: 'back' | 'forward' = 'back';
-
-/**
- * popstate 방향 신호 setter. popstate-view-transition 이 호출한다.
- * (값-모듈 순환을 피하려고 신호를 back-stack 에 두고 popstate-view-transition 이 import 한다 —
- * 이미 popstate-view-transition → back-stack(`getBackStackSize`) 의존이 있어 새 순환은 없다.)
- */
-export function setLastPopstateDirection(direction: 'back' | 'forward'): void {
-  lastPopstateDirection = direction;
-}
-
-/**
  * 직전 popstate 가 sentinel 흡수(skipSentinelEntry)로 우리가 발생시킨 것인지 표시.
  *
  * 흡수용 history.back() 의 popstate 는 사용자 back 이 아니므로 stack 핸들러를 소비하면
@@ -98,7 +77,7 @@ function skipSentinelEntry(): void {
   if (!isClient()) return;
   try {
     absorptionInFlight = true;
-    if (lastPopstateDirection === 'forward') window.history.forward();
+    if (getLastPopstateDirection() === 'forward') window.history.forward();
     else window.history.back();
   } catch {
     /* 더 이상 그 방향으로 갈 entry 가 없으면 흡수 종료 */

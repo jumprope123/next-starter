@@ -1,5 +1,6 @@
 import { withSubComponents } from '@/utils';
-import { OriginNextImage, ProtectedNextImage as Protected } from '.';
+import { OriginNextImage } from './origin-next-image';
+import { ProtectedNextImage as Protected } from './protected-next-image';
 
 export * from './origin-next-image';
 export * from './protected-next-image';

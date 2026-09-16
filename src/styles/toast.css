@@ -35,15 +35,6 @@
   transition: none !important;
 }
 
-/*
- * View Transition 과의 합성 — 토스트 컨테이너를 별도 VT group 으로 분리한다.
- * 페이지 슬라이드 시 OLD 스냅샷의 토스트가 함께 슬라이드되거나 두 좌표에 겹쳐 보이는 잔상을
- * 막고, NEW(라이브) 하나만 표시한다 (view-transitions.css 의 app-toaster 규칙과 짝).
- */
-.app-toaster {
-  view-transition-name: app-toaster;
-}
-
 @keyframes app-toast-enter-move {
   from {
     transform: translate3d(0, 50px, 0);

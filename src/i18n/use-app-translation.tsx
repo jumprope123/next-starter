@@ -2,12 +2,8 @@
 
 import { useTranslations } from 'next-intl';
 import { useCallback } from 'react';
+import { isMissingTranslation } from './app-translation-types';
 import type { AppT, AppTranslationOptions } from './app-translation-types';
-
-function isMissingResult(result: string, key: string): boolean {
-  // 빈 문자열은 의도된 번역(예: 한국어 호칭 '님' / 단위 '장' 이 영어에는 없음) 일 수 있어 missing 으로 보지 않는다.
-  return result === key || (typeof result === 'string' && result.endsWith('.' + key));
-}
 
 /**
  * 클라이언트용 번역 훅 — fallback 과 values 를 한 곳에서 받는다.
@@ -28,7 +24,7 @@ export function useAppTranslation(): AppT {
       const { fallback, values } = options ?? {};
       try {
         const result = values ? t(key, values) : t(key);
-        if (fallback !== undefined && isMissingResult(result, key)) return fallback;
+        if (fallback !== undefined && isMissingTranslation(result, key)) return fallback;
         return result;
       } catch {
         return fallback ?? key;

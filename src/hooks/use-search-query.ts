@@ -1,9 +1,9 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
 import queryString from 'query-string';
+import { usePathname, useRouter } from '@/i18n/navigation';
 import { useCallback } from 'react';
-import { useAllSearchParams } from '@/hooks';
+import { useAllSearchParams } from './use-all-search-params';
 import { ParsedUrlQuery } from '@/types';
 
 type UseSearchQuerySetOptions = {
@@ -28,6 +28,11 @@ type UseSearchQueryResult<T> = UseSearchQueryResultTuple<T> & UseSearchQueryResu
  *   기본 동작은 `router.replace` 이며 `{ replace: false }` 로 호출하면 `router.push` 가 사용된다.
  *   두 경우 모두 `{ scroll: false }` 옵션이 적용되어 페이지 스크롤이 흔들리지 않는다.
  * - `resetQuery` 는 모든 쿼리를 제거한 pathname 으로 `replace` 한다.
+ *
+ * 라우터는 반드시 `@/i18n/navigation` 것을 쓴다 (`next/navigation` 직접 사용 금지).
+ * locale prefix 자동 처리뿐 아니라, 열린 바텀시트/모달이 history 에 쌓아둔 back-stack sentinel 을
+ * pop 한 뒤 replace 해 주기 때문이다 — raw 라우터로 replace 하면 sentinel entry 만 덮여
+ * "필터 시트에서 쿼리를 바꾸고 닫았는데 뒤로가기가 한 번 더 필요한" 증상이 난다.
  *
  * 반환값은 객체 형태(`{ query, setQuery, resetQuery }`) 와 튜플 형태(`[query, setQuery, resetQuery]`)
  * 모두로 비구조화 할 수 있도록 합쳐진 객체이다.

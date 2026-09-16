@@ -2,7 +2,6 @@ export * from './use-all-search-params';
 export * from './use-container';
 export * from './use-copy-to-clipboard';
 export * from './use-debounced-value';
-export * from './use-defer-open-during-view-transition';
 export * from './use-disclosure';
 export * from './use-dismiss-on-back';
 export * from './use-focus-scroll';

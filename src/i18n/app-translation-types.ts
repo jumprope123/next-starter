@@ -12,3 +12,16 @@ export type AppTranslationOptions = {
 
 /** next-intl 의 `t()` 를 fallback / values 지원으로 감싼 함수 시그니처. */
 export type AppT = (key: string, options?: AppTranslationOptions) => string;
+
+/**
+ * `t(key)` 결과가 "번역 누락" 인지 판정한다.
+ *
+ * next-intl 은 키가 없으면 키 자체(또는 `네임스페이스.키`)를 그대로 돌려주므로 그 형태를 본다.
+ * 빈 문자열은 **의도된 번역** 일 수 있어(한국어 호칭 '님' / 단위 '장' 이 영어에는 없는 경우 등)
+ * 누락으로 보지 않는다.
+ *
+ * 클라이언트(`use-app-translation`) / 서버(`get-server-app-translation`) 양쪽이 공유한다.
+ */
+export function isMissingTranslation(result: string, key: string): boolean {
+  return result === key || result.endsWith('.' + key);
+}

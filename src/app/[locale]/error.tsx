@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useAppTranslation } from '@/i18n/use-app-translation';
 
 type Props = {
   error: Error & { digest?: string };
@@ -16,6 +17,8 @@ type Props = {
  * 외부 모니터링(Sentry 등) 으로 보고하려면 `useEffect` 안에서 같이 호출한다.
  */
 export default function ErrorPage({ error, reset }: Readonly<Props>) {
+  const t = useAppTranslation();
+
   useEffect(() => {
     console.error('[route-error]', error);
   }, [error]);
@@ -23,14 +26,16 @@ export default function ErrorPage({ error, reset }: Readonly<Props>) {
   return (
     <main className="mx-auto flex min-h-screen-enhanced w-full max-w-2xl flex-1 flex-col items-center justify-center gap-4 px-5 py-12 text-center">
       <p className="text-sm font-medium text-rose-500">Error</p>
-      <h1 className="text-2xl font-bold">문제가 발생했어요</h1>
-      <p className="max-w-md text-sm text-zinc-600">{error?.message ?? '잠시 후 다시 시도해주세요.'}</p>
+      <h1 className="text-2xl font-bold">{t('0008', { fallback: '문제가 발생했어요' })}</h1>
+      <p className="max-w-md text-sm text-zinc-600">
+        {error?.message || t('0010', { fallback: '잠시 후 다시 시도해주세요.' })}
+      </p>
       <button
         type="button"
         onClick={reset}
         className="mt-2 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
       >
-        다시 시도
+        {t('0009', { fallback: '다시 시도' })}
       </button>
     </main>
   );

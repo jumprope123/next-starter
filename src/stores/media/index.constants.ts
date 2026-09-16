@@ -1,4 +1,4 @@
-import { MediaStoreGetter } from '.';
+import type { MediaStoreGetter } from './index.type';
 
 /**
  * 미디어 store 의 초기값.

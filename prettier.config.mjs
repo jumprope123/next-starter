@@ -9,7 +9,7 @@ const config = {
   semi: true,
   plugins: ['prettier-plugin-tailwindcss'],
   tailwindStylesheet: './src/styles/globals.css',
-  tailwindFunctions: ['cn', 'clsx', 'tw', 'twMerge', 'cva'],
+  tailwindFunctions: ['cn', 'clsx', 'tw', 'twMerge'],
 };
 
 export default config;

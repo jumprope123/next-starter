@@ -2,16 +2,18 @@ import type { Metadata, Viewport } from 'next';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
 import localFont from 'next/font/local';
+// `notFound` 는 next-intl 이 감싸지 않는 Next 내장 API 라 예외적으로 직접 import 한다.
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import '@/styles/globals.css';
 import { getCookieAction } from '@/actions';
 import { CustomPointer, MobileDetector, Polyfill, PressFeedback } from '@/components';
 import { CookieName } from '@/constants';
-import { BackButtonHandler, PageViewTransition, PopstateViewTransitionNotifier } from '@/core';
+import { BackButtonHandler } from '@/core';
 import { getAppMessages, type Locale } from '@/i18n/messages';
 import { routing } from '@/i18n/routing';
 import { AppShellProviders } from '@/providers';
+import { SettingsHydrator } from '@/stores';
 import { cn, staticMetadata } from '@/utils';
 
 export const metadata: Metadata = staticMetadata({
@@ -45,7 +47,8 @@ const pretendard = localFont({
  *  3. `<AppShellProviders>` — react-query / nuqs / react-hot-toast 를 한 번에 켠다.
  *  4. `<Suspense>{children}` — 페이지 트리.
  *  5. `<MobileDetector />` — User-Agent 분석 결과를 zustand 에 기록 (`isReady` 가 `true` 가 됨).
- *  6. `#next-app-portal` — `<Portal />` 컴포넌트의 마운트 포인트.
+ *  6. `<SettingsHydrator />` — 영속 store 를 첫 페인트 이후에 복원 (hydration mismatch 방지).
+ *  7. `#next-app-portal` — `<Portal />` 컴포넌트의 마운트 포인트.
  */
 export default async function LocaleLayout({ children, params }: Readonly<LayoutProps<'/[locale]'>>) {
   const { locale: rawLocale } = await params;
@@ -72,30 +75,23 @@ export default async function LocaleLayout({ children, params }: Readonly<Layout
         <NextIntlClientProvider locale={locale} messages={getAppMessages(locale)}>
           <AppShellProviders>
             {/*
-              PageViewTransition: Link/useRouter (`@/i18n/navigation`) 가 주입한 transitionTypes
-              (nav-forward · nav-back · nav-lateral · nav-fade) 에 따라 view-transitions.css 의
-              `::view-transition-old(.nav-*)` 셀렉터로 iOS 스타일 push/pop 슬라이드를 실행한다.
-
-              id="app-page-shell": popstate(브라우저 back/forward) 전환을 구동하는
-              `@/core/view-transition` 의 PAGE_SHELL_ELEMENT_ID 와 짝 — 해당 모듈이 이 div 를 찾아
-              view-transition-name 을 부여한다. page-shell 은 transition snapshot 단위라 화면 전체를
-              덮어야 하며, 폭을 제한하는 모바일 셸(예: mx-auto max-w-md)을 쓰려면 이 div 에 준다.
+              id="app-page-shell": safe-area 게이트가 상/하단 inset 패딩을 주는 페이지 셸
+              (styles/safe-area.css). 폭을 제한하는 모바일 셸(예: mx-auto max-w-md)을 쓰려면 이 div 에 준다.
             */}
-            <PageViewTransition>
-              <div id="app-page-shell">
-                <Suspense>{children}</Suspense>
-              </div>
-            </PageViewTransition>
+            <div id="app-page-shell">
+              <Suspense>{children}</Suspense>
+            </div>
 
             <MobileDetector />
+            {/* localStorage / sessionStorage 영속 store 복원 — hydration mismatch 를 피하려고
+                첫 페인트 이후에 수행한다 (stores/settings/settings-store.ts 주석 참조). */}
+            <SettingsHydrator />
 
             {/* For Portal Component */}
             <div id="next-app-portal" />
 
             {/* 브라우저/하드웨어 back 을 back-stack 에 연결 — 뒤로가기로 모달·바텀시트 닫기. */}
             <BackButtonHandler />
-            {/* 브라우저 back/forward(popstate) 의 View Transition 라우트 commit 보고용. */}
-            <PopstateViewTransitionNotifier />
             {/* 터치/클릭한 요소를 살짝 안으로 눌러 넣는 모바일 시스템 앱 스타일 눌림 피드백.
                 네이티브 탭 하이라이트(-webkit-tap-highlight-color)를 지운 자리를 메운다. */}
             <PressFeedback />

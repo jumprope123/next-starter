@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { Property } from 'csstype';
 
-import { useMedia } from './index';
+import { useMedia } from './use-media';
 
 /**
  * 가로 1920px 를 초과하는 와이드 화면에서 좌우에 동일한 여백을 주어 컨텐츠를 중앙 정렬할 수 있는
@@ -42,7 +42,9 @@ export function useContainer() {
     [overflowPadding, lg]
   );
 
-  const onResize = useCallback(() => setOverflowPadding(calculateOverflowPadding), [calculateOverflowPadding]);
+  // 함수를 그대로 넘기면 React 가 functional updater 로 해석한다 — 지금은 인자를 무시해
+  // 우연히 동작하지만, 시그니처가 바뀌는 순간 조용히 깨진다. 값을 계산해서 넘긴다.
+  const onResize = useCallback(() => setOverflowPadding(calculateOverflowPadding()), [calculateOverflowPadding]);
 
   useEffect(() => {
     window.addEventListener('resize', onResize);

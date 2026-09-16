@@ -1,0 +1,10 @@
+# 생성물 / 잠금 파일 — prettier 가 건드리면 도구가 만든 포맷과 계속 충돌한다.
+.next/
+out/
+build/
+node_modules/
+pnpm-lock.yaml
+next-env.d.ts
+
+# 패키지 매니저가 직접 쓰는 파일 (pnpm 이 자체 포맷으로 다시 씀)
+package.json

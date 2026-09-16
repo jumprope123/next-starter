@@ -8,10 +8,10 @@ TypeScript 기반 Next.js 16 (App Router) 단일 앱 보일러플레이트. 프�
 
 ## 요구 사항
 
-| 항목 | 버전 |
-| --- | --- |
-| Node.js | `>=24.12.0 <25.0.0` |
-| pnpm | `10.30.3` (`packageManager` 필드로 강제) |
+| 항목    | 버전                                     |
+| ------- | ---------------------------------------- |
+| Node.js | `>=24.12.0 <25.0.0`                      |
+| pnpm    | `10.30.3` (`packageManager` 필드로 강제) |
 
 `.npmrc` 의 `engine-strict=true` 가 켜져 있어 다른 버전에서는 `pnpm install` 이 실패한다.
 
@@ -90,9 +90,9 @@ public/
 
 `tsconfig.json` 의 path alias:
 
-| Alias | 대상 |
-| --- | --- |
-| `@/*` | `./src/*` |
+| Alias | 대상         |
+| ----- | ------------ |
+| `@/*` | `./src/*`    |
 | `#/*` | `./public/*` |
 
 각 폴더의 `index.ts` 가 하위 모듈을 재수출하므로, 외부에서는 `@/utils`, `@/hooks`, `@/components`, `@/stores`, `@/actions`, `@/core`, `@/providers`, `@/constants`, `@/i18n` 형태로만 임포트한다.
@@ -103,71 +103,71 @@ public/
 
 ### Components (`src/components`)
 
-| 컴포넌트 | 역할 |
-| --- | --- |
-| `Polyfill` | core-js 폴리필을 클라이언트 번들에 1 회 주입 (렌더 X) |
-| `MobileDetector` | User-Agent 분석 결과를 `useMobileStore` 에 기록 |
-| `Portal` | `#next-app-portal` 노드로 children 포털링 (SSR off) |
-| `NextImage` / `NextImage.Protected` | `next/image` 래퍼 (비율 / fallback / 우클릭 보호) |
-| `AnimatedTimer` | 두 자리 숫자 슬라이드 카운터 (framer-motion) |
-| `TextMotion` | 텍스트 순환 + 글자 스태거 모션 |
-| `Skeleton` | `react-loading-skeleton` 얇은 래퍼 |
-| `ClientOnly` | hydration 부조화 방지 (마운트 전에는 fallback 렌더) |
-| `ErrorBoundary` | 위젯 단위 에러 폴백 (페이지 단위는 `app/.../error.tsx`) |
+| 컴포넌트                            | 역할                                                    |
+| ----------------------------------- | ------------------------------------------------------- |
+| `Polyfill`                          | core-js 폴리필을 클라이언트 번들에 1 회 주입 (렌더 X)   |
+| `MobileDetector`                    | User-Agent 분석 결과를 `useMobileStore` 에 기록         |
+| `Portal`                            | `#next-app-portal` 노드로 children 포털링 (SSR off)     |
+| `NextImage` / `NextImage.Protected` | `next/image` 래퍼 (비율 / fallback / 우클릭 보호)       |
+| `AnimatedTimer`                     | 두 자리 숫자 슬라이드 카운터 (framer-motion)            |
+| `TextMotion`                        | 텍스트 순환 + 글자 스태거 모션                          |
+| `Skeleton`                          | `react-loading-skeleton` 얇은 래퍼                      |
+| `ClientOnly`                        | hydration 부조화 방지 (마운트 전에는 fallback 렌더)     |
+| `ErrorBoundary`                     | 위젯 단위 에러 폴백 (페이지 단위는 `app/.../error.tsx`) |
 
 ### Hooks (`src/hooks`)
 
-| 훅 | 역할 |
-| --- | --- |
-| `useMedia` | Tailwind `sm/md/lg/xl` 매칭 → zustand 동기화 |
-| `useContainer` | 와이드 화면(>1920px) 좌우 균등 padding 계산 |
-| `useFocusScroll` | 가로 스크롤 컨테이너에서 특정 자식 위치로 스크롤 |
-| `useOnClickOutside` | ref 외부 mouseup 감지 |
-| `useScrollPage` | 가로 캐러셀의 페이지 인덱스 추적 / 이동 |
-| `useScrollFadeIn` | GSAP ScrollTrigger 페이드 인 |
-| `useGrabSlide` | 마우스 드래그로 가로 스크롤 조작 |
-| `useAllSearchParams` | `URLSearchParams` → 객체 변환 |
-| `useSearchQuery` | URL 쿼리 읽기 / 쓰기 / 리셋 |
-| `useServerNow` | 서버 시간 기준 1 초 단위 `now` 갱신 |
-| `useDisclosure` | 모달/시트/드롭다운 토글 (`isOpen / open / close / toggle`) |
-| `useToggle` | 단순 boolean 토글 (`[value, toggle, set]`) |
-| `useMounted` | hydration 이후 마운트 여부 |
-| `useDebouncedValue` | 입력 값을 디바운스해 안정적인 값 반환 |
-| `useCopyToClipboard` | 복사 + `isCopied` 피드백 상태 |
+| 훅                   | 역할                                                       |
+| -------------------- | ---------------------------------------------------------- |
+| `useMedia`           | Tailwind `sm/md/lg/xl` 매칭 → zustand 동기화               |
+| `useContainer`       | 와이드 화면(>1920px) 좌우 균등 padding 계산                |
+| `useFocusScroll`     | 가로 스크롤 컨테이너에서 특정 자식 위치로 스크롤           |
+| `useOnClickOutside`  | ref 외부 mouseup 감지                                      |
+| `useScrollPage`      | 가로 캐러셀의 페이지 인덱스 추적 / 이동                    |
+| `useScrollFadeIn`    | GSAP ScrollTrigger 페이드 인                               |
+| `useGrabSlide`       | 마우스 드래그로 가로 스크롤 조작                           |
+| `useAllSearchParams` | `URLSearchParams` → 객체 변환                              |
+| `useSearchQuery`     | URL 쿼리 읽기 / 쓰기 / 리셋                                |
+| `useServerNow`       | 서버 시간 기준 1 초 단위 `now` 갱신                        |
+| `useDisclosure`      | 모달/시트/드롭다운 토글 (`isOpen / open / close / toggle`) |
+| `useToggle`          | 단순 boolean 토글 (`[value, toggle, set]`)                 |
+| `useMounted`         | hydration 이후 마운트 여부                                 |
+| `useDebouncedValue`  | 입력 값을 디바운스해 안정적인 값 반환                      |
+| `useCopyToClipboard` | 복사 + `isCopied` 피드백 상태                              |
 
 ### Utils (`src/utils`)
 
-| 모듈 | 주요 export |
-| --- | --- |
-| `array` | `shuffle`, `getChunkedArray`, `filterDuplicateItem`, `deepCopy` |
-| `boolean` | `isTrue` |
-| `class` | `cn` (clsx + tailwind-merge) |
-| `clipboard` | `copyToClipboard` |
-| `date` | `secondsToMinutes`, `getElapsedTime` |
-| `device` | `isTouchDevice` |
-| `download` | `downloadFile` |
-| `element` | `getHighlightedText` |
-| `env` | `isServer`, `isClient`, `isDevelopment`, `isProduction`, `isTest` |
-| `format` | `toNumber`, `formatNumber`, `joinValueUnit`, `formatPhoneNumber`, `phoneNumberUtil`, `formatDate`, `calculateDday` |
-| `keyboard` | `isEnter` (IME 대응) |
-| `meta` | `staticMetadata`, `shareCurrentPage` |
-| `next` | `allowCors` (Route Handler CORS 래퍼) |
-| `number` | `clamp`, `range`, `lerp` |
-| `object` | `compareAllKeys`, `hasAllValues`, `withSubComponents`, `pick`, `omit`, `removeUndefined` |
-| `promise` | `getFulfilledResults`, `getRejectedResults`, `sleep`, `withTimeout`, `retry` |
-| `query` | `isValidQuery`, `addToQuery`, `removeFromQuery`, `createHrefQuery` |
-| `ref` | `mergeRefs` |
-| `storage` | `storage` (localStorage), `sessionStorage` (둘 다 SSR-safe + JSON 자동 직렬화) |
-| `type` | `assertNever`, `isObject`, `isNotNullish` |
+| 모듈        | 주요 export                                                                                                        |
+| ----------- | ------------------------------------------------------------------------------------------------------------------ |
+| `array`     | `shuffle`, `getChunkedArray`, `filterDuplicateItem`, `deepCopy`                                                    |
+| `boolean`   | `isTrue`                                                                                                           |
+| `class`     | `cn` (clsx + tailwind-merge)                                                                                       |
+| `clipboard` | `copyToClipboard`                                                                                                  |
+| `date`      | `secondsToMinutes`, `getElapsedTime`                                                                               |
+| `device`    | `isTouchDevice`                                                                                                    |
+| `download`  | `downloadFile`                                                                                                     |
+| `element`   | `getHighlightedText`                                                                                               |
+| `env`       | `isServer`, `isClient`, `isDevelopment`, `isProduction`, `isTest`                                                  |
+| `format`    | `toNumber`, `formatNumber`, `joinValueUnit`, `formatPhoneNumber`, `phoneNumberUtil`, `formatDate`, `calculateDday` |
+| `keyboard`  | `isEnter` (IME 대응)                                                                                               |
+| `meta`      | `staticMetadata`, `shareCurrentPage`                                                                               |
+| `next`      | `allowCors` (Route Handler CORS 래퍼)                                                                              |
+| `number`    | `clamp`, `range`, `lerp`                                                                                           |
+| `object`    | `compareAllKeys`, `hasAllValues`, `withSubComponents`, `pick`, `omit`, `removeUndefined`                           |
+| `promise`   | `getFulfilledResults`, `getRejectedResults`, `sleep`, `withTimeout`, `retry`                                       |
+| `query`     | `isValidQuery`, `addToQuery`, `removeFromQuery`, `createHrefQuery`                                                 |
+| `ref`       | `mergeRefs`                                                                                                        |
+| `storage`   | `storage` (localStorage), `sessionStorage` (둘 다 SSR-safe + JSON 자동 직렬화)                                     |
+| `type`      | `assertNever`, `isObject`, `isNotNullish`                                                                          |
 
 ### Stores (`src/stores`)
 
-| Store | 설명 |
-| --- | --- |
-| `useMediaStore` | `sm / md / lg / xl` boolean. `useMedia` 훅이 갱신 |
-| `useMobileStore` | `isMobile / isAndroid / isIOS / isReady`. `<MobileDetector />` 가 채움 |
-| `useLocalSettingsStore` | localStorage 영구 저장 (`isDarkMode` 예시) |
-| `useSessionSettingsStore` | sessionStorage 보존 (`isLaunched` 예시) |
+| Store                     | 설명                                                                   |
+| ------------------------- | ---------------------------------------------------------------------- |
+| `useMediaStore`           | `sm / md / lg / xl` boolean. `useMedia` 훅이 갱신                      |
+| `useMobileStore`          | `isMobile / isAndroid / isIOS / isReady`. `<MobileDetector />` 가 채움 |
+| `useLocalSettingsStore`   | localStorage 영구 저장 (`isDarkMode` 예시)                             |
+| `useSessionSettingsStore` | sessionStorage 보존 (`isLaunched` 예시)                                |
 
 ### Core / Actions (`src/core`, `src/actions`)
 
@@ -179,11 +179,17 @@ public/
 ### Providers (`src/providers`)
 
 ```tsx
-<NextIntlClientProvider>           // [locale]/layout.tsx
-  <AppShellProviders>              // app-shell-providers.tsx
-    <QueryProvider>                // QueryClient lazy init — 서버는 매 요청 / 브라우저는 싱글턴
+<NextIntlClientProvider>
+  {' '}
+  // [locale]/layout.tsx
+  <AppShellProviders>
+    {' '}
+    // app-shell-providers.tsx
+    <QueryProvider>
+      {' '}
+      // QueryClient lazy init — 서버는 매 요청 / 브라우저는 싱글턴
       <NuqsAdapter>{children}</NuqsAdapter>
-      <Toaster />                  // react-hot-toast
+      <Toaster /> // react-hot-toast
     </QueryProvider>
   </AppShellProviders>
 </NextIntlClientProvider>
@@ -209,8 +215,8 @@ public/
   ```
 - Navigation: `next/link` / `next/navigation` 의 `Link, redirect, useRouter, usePathname` 대신 항상 다음을 쓴다.
   ```ts
-  import { Link, useRouter, usePathname } from '@/i18n/navigation';            // 클라이언트
-  import { redirect, permanentRedirect } from '@/i18n/server-navigation';      // 서버 (await 필수)
+  import { Link, useRouter, usePathname } from '@/i18n/navigation'; // 클라이언트
+  import { redirect, permanentRedirect } from '@/i18n/server-navigation'; // 서버 (await 필수)
   ```
 - 로케일 추가 시: `routing.ts` 의 `locales` 에 코드 추가 → `messages/<code>.json` 작성 → `messages.ts` 의 `messagesByLocale` 에 등록.
 
