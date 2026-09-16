@@ -1,3 +1,4 @@
+import { PageTransition } from '@/components';
 import { getServerAppTranslation } from '@/i18n/get-server-app-translation';
 import { Link } from '@/i18n/navigation';
 import { ROUTE_PATHS } from '@/constants';
@@ -14,18 +15,21 @@ export default async function NotFound() {
   const t = await getServerAppTranslation();
 
   return (
-    <main className="mx-auto flex min-h-screen-enhanced w-full max-w-2xl flex-1 flex-col items-center justify-center gap-4 px-5 py-12 text-center">
-      <p className="text-sm font-medium text-zinc-500">404</p>
-      <h1 className="text-2xl font-bold">{t('0005', { fallback: '페이지를 찾을 수 없어요' })}</h1>
-      <p className="text-sm text-zinc-600">
-        {t('0006', { fallback: '주소가 잘못되었거나, 더 이상 존재하지 않는 페이지입니다.' })}
-      </p>
-      <Link
-        href={ROUTE_PATHS.HOME}
-        className="mt-2 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-      >
-        {t('0007', { fallback: '홈으로 돌아가기' })}
-      </Link>
-    </main>
+    <PageTransition>
+      <main className="mx-auto flex min-h-screen-enhanced w-full max-w-2xl flex-1 flex-col items-center justify-center gap-4 px-5 py-12 text-center">
+        <p className="text-sm font-medium text-zinc-500">404</p>
+        <h1 className="text-2xl font-bold">{t('0005', { fallback: '페이지를 찾을 수 없어요' })}</h1>
+        <p className="text-sm text-zinc-600">
+          {t('0006', { fallback: '주소가 잘못되었거나, 더 이상 존재하지 않는 페이지입니다.' })}
+        </p>
+        <Link
+          href={ROUTE_PATHS.HOME}
+          transitionTypes={['nav-back']}
+          className="mt-2 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+        >
+          {t('0007', { fallback: '홈으로 돌아가기' })}
+        </Link>
+      </main>
+    </PageTransition>
   );
 }

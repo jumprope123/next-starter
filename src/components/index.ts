@@ -4,6 +4,7 @@ export * from './custom-pointer';
 export * from './error-boundary';
 export * from './mobile-detector';
 export * from './next-image';
+export * from './page-transition';
 export * from './polyfill';
 export * from './portal';
 export * from './press-feedback';

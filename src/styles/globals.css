@@ -1,7 +1,7 @@
 /*
  * 전역 스타일 단일 진입점.
  * 모든 partial 을 여기서 한 번씩만 import 한다 — partial 끼리 서로 import 하지 않는다.
- * 순서: 토큰(:root 변수) → @theme/유틸 → safe-area 게이트(플러그인 뒤) → 연출 → 글로벌 리셋.
+ * 순서: 토큰(:root 변수) → @theme/유틸 → safe-area 게이트(플러그인 뒤) → 페이지 전환 → 연출 → 글로벌 리셋.
  */
 @import 'tailwindcss';
 @import 'tailwindcss-safe-area';
@@ -15,6 +15,7 @@
 /* tailwindcss-safe-area 의 --twsa-safe-area-inset-* 변수를 게이트로 덮어쓴다.
    반드시 위 @import "tailwindcss-safe-area" 이후에 와서 기본 :root(env()) 정의를 이긴다. */
 @import './safe-area.css';
+@import './view-transitions.css';
 @import './custom-pointer.css';
 @import './press-feedback.css';
 @import './toast.css';
