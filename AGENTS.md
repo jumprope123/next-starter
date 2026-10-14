@@ -16,6 +16,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## 0. Always-do
 
+0. **세션에서 첫 응답을 하기 전에 Next.js 와 동반 의존성이 최신 안정판인지 확인한다** (2026-10-08 사용자 지시, 2026-10-14 대상 확대 · 개인 프로젝트 — 아나나마켓 · 오브차니 · 우동단 · 백룸 · 남대문리뷰 · 아이사이즈 · 먹깨비런치 · next-starter · 시티히든팩트 · 하이퍼로컬 — 이 같은 규칙을 쓴다).
+   `npm view next version`(`latest` 꼬리표다 — 카나리아 · 베타 · rc · preview 는 따라가지 않는다)을 `package.json` 의 `next`(pnpm catalog 를 쓰는 모노레포는 `pnpm-workspace.yaml` 의 catalog 값과 각 앱 `package.json`)와 비교해, **뒤처져 있으면 사용자가 묻지 않았어도 응답 첫머리에 한 줄로 알리고 올릴지 묻는다**(예: «넥스트 16.4.0 이 나왔습니다 — 지금 16.2.5»). 같으면 말하지 않는다. 조회가 안 되면 «확인하지 못했다» 고 한 줄 남긴다 — 안 돈 확인을 «최신» 으로 치지 않는다.
+   같은 자리에서 아래 «next 만 올리지 않는다» 의 동반 의존성(`eslint-config-next` · `react` · `react-dom` · `@types/react` · `@types/react-dom` · `next-intl` · `nuqs` · `better-auth` · `babel-plugin-react-compiler` 중 쓰는 것)도 `pnpm outdated` 로 보고, 뒤처진 것이 있으면 같은 한 줄에 덧붙인다.
+   **늘 묻고 올린다 — 사용자가 하자고 하기 전에는 올리지 않는다**(뒤처진 폭이 작아도 · 보안 패치여도). 올릴 때는 **`vercel:next-upgrade` 스킬**(버셀 공식 — 이행 안내 · codemod)로 하고, 하던 일의 변경과 섞지 않는다(커밋은 사용자가 정한다). 이 템플릿에서 파생한 프로젝트도 이 규칙을 그대로 쓴다.
+   - **next 만 올리지 않는다.** `eslint-config-next` 는 next 와 같은 버전으로, `react` · `react-dom` · `@types/react` · `@types/react-dom` 은 새 next 의 peer 범위(`npm view next@<버전> peerDependencies`)에 맞추고, next 에 얹혀 도는 `next-intl` · `nuqs` · `better-auth` · `babel-plugin-react-compiler` 가 새 버전을 받는지 보고 필요하면 같이 올린다. Node 엔진 요구가 바뀌었는지도 본다. `pnpm install` 에 peer 경고가 남으면 끝난 것이 아니다.
+   - **사이드 이펙트를 먼저 읽는다.** 지금 버전부터 새 버전까지의 릴리스 노트 전부와 `node_modules/next/dist/docs/` 의 업그레이드 안내에서, 우리가 쓰는 것(미들웨어 · `next.config.ts` · `next typegen` · Turbopack · React Compiler · `next/image` · Route Handler · 데이터 캐시 · 메타데이터 · Cache Components) 가운데 바뀐 것을 짚어 보고한다.
+   - **검증은 §6 검증 절차 전부** — lint → 타입 검사 → build → 앱을 띄워 주요 화면을 실제로 본다. 하나라도 걸리고 못 고치면 **올리지 않고** 까닭을 알린다.
+   - **기존 기능에 이슈가 생기면 안 된다.** 올리기 전에 같은 화면 · 흐름을 먼저 돌려 기준을 잡고, 올린 뒤 같은 것을 다시 돌려 견준다 — 타입 검사 · 빌드를 통과하고도 실행할 때 죽는 것이 있어, 통과는 «안 깨졌다» 가 아니다. 달라진 동작은 우리 코드를 고쳐 맞추고, 못 맞추면 올리지 않는다.
+   - **올린 뒤에는 중요한 변경을 정리해 알린다** — 새로 쓸 수 있게 된 것 · 바뀐 기본값과 동작 · 사라질 예정인 것 · 같이 올린 의존성과 버전 · 그 때문에 우리 코드에서 고친 곳 · 확인한 것과 확인하지 못한 것. 알릴 것이 없으면 «중요한 변경 없음» 한 줄.
 1. **Next.js 관련 작업 전에는 반드시 `node_modules/next/dist/docs/` 에서 해당 항목 문서를 읽는다.** 학습 데이터는 오래되었을 수 있다.
 2. **새 파일을 만들기 전에 `src/utils`, `src/hooks`, `src/components`, `src/stores`, `src/providers` 의 `index.ts` 재수출을 먼저 확인한다.** 동일/유사 기능이 이미 있으면 그것을 사용한다.
 3. **alias 를 일관되게 사용한다.** `@/...` → `src/`, `#/...` → `public/`. 상대 경로는 같은 기능 폴더 내부에서만 허용한다.
