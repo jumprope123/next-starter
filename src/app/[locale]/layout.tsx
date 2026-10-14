@@ -21,6 +21,15 @@ export const metadata: Metadata = staticMetadata({
   description: 'Next.js boilerplate with i18n, React Query, Zustand, Tailwind CSS',
 });
 
+// Cache Components 는 루트 동적 세그먼트([locale])의 값을 빌드 때 알아야 한다.
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
+
+// safe-area 쿠키를 Suspense 밖에서 읽는다 — 정적 셸 검증에서 빼고 요청 시점에 통째로 렌더한다.
+// (docs/cache-components-guide.md §3-1)
+export const instant = false;
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,

@@ -1,9 +1,10 @@
 <!-- BEGIN:nextjs-agent-rules -->
 
-# Next.js: ALWAYS read docs before coding
+# This is NOT the Next.js you know
 
-Before any Next.js work, find and read the relevant doc in `node_modules/next/dist/docs/`. Your training data is
-outdated — the docs are the source of truth.
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
 
@@ -20,14 +21,15 @@ outdated — the docs are the source of truth.
 3. **alias 를 일관되게 사용한다.** `@/...` → `src/`, `#/...` → `public/`. 상대 경로는 같은 기능 폴더 내부에서만 허용한다.
 4. **기능을 추가하면 해당 폴더의 `index.ts` 에 export 를 잊지 않는다.**
 5. **Server / Client 컴포넌트 경계를 의식한다.** 클라이언트 훅(`useState`, `useEffect`, zustand, react-query) 을 쓰는 파일은 첫 줄에 `'use client'`.
-6. **i18n 라우팅 / redirect 는 `@/i18n/navigation` 또는 `@/i18n/server-navigation` 에서만 import.** `next/link`, `next/navigation` 직접 사용 금지. 예외는 next-intl 이 감싸지 않는 `notFound` / `useSearchParams` 뿐이며, 해당 import 에는 이유를 주석으로 남긴다. (`useRouter` 는 back-stack sentinel 정리까지 해주므로 우회하면 바텀시트 뒤로가기가 깨진다.)
+6. **i18n 라우팅 / redirect 는 `@/i18n/navigation` 또는 `@/i18n/server-navigation` 에서만 import.** `next/link`, `next/navigation` 직접 사용 금지. 예외는 next-intl 이 감싸지 않는 `notFound` / `useSearchParams` 와, `bfcacheId` 를 읽으려는 `src/components/route-preserve.tsx` 의 `useRouter`(라우팅에는 쓰지 않음) 뿐이며, 해당 import 에는 이유를 주석으로 남긴다. (`useRouter` 는 back-stack sentinel 정리까지 해주므로 우회하면 바텀시트 뒤로가기가 깨진다.)
 7. **className 합성은 항상 `cn(...)` 을 사용한다.** (`@/utils/class.ts`)
+8. **모든 `page.tsx` 는 default export 를 `freshOnNavigation(Page)` 또는 `noRoutePreserve(Page)` 로 감싼다.** Cache Components 가 떠난 화면을 보존하기 때문이다 — 규칙은 §8, 원리·함정은 [docs/cache-components-guide.md](docs/cache-components-guide.md). 감싸지 않으면 ESLint `app/page-route-preserve` 가 오류를 낸다.
 
 ## 1. 한눈에
 
 | 항목       | 값                                                                                                                             |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| 프레임워크 | Next.js 16 (App Router, Turbopack) + React 19 + React Compiler                                                                 |
+| 프레임워크 | Next.js 16 (App Router, Turbopack) + React 19 + React Compiler + Cache Components (`partialPrefetching`)                       |
 | 언어       | TypeScript 5, `strict: true`, `noUncheckedIndexedAccess: true`                                                                 |
 | 스타일     | Tailwind CSS 4 (`@tailwindcss/postcss`) + `cn(clsx + tailwind-merge)` + `tailwindcss-safe-area`                                |
 | 상태       | zustand 5 (모든 store 는 `'use client'`)                                                                                       |
@@ -138,8 +140,13 @@ alias: `@/*` → `./src/*`, `#/*` → `./public/*`
 | `useDebouncedValue`   | 입력 값을 디바운스해 안정적인 값 반환                                                                                                       |
 | `useCopyToClipboard`  | 복사 + `isCopied` 피드백 상태                                                                                                               |
 | `useDismissOnBack`    | **뒤로가기(브라우저/안드 back)로 모달·바텀시트 닫기.** `useDismissOnBack(isOpen, close)` — history sentinel 자동 관리 (`@/core` back-stack) |
+| `useResetOnHide`      | 보존되는 화면이 **숨겨질 때** 일시 state 를 되돌린다(열린 모달·시트, 진행 플래그, 1회 ref). 언마운트 때도 돈다 — 로컬 state 만 (§8)         |
 | `useScrollLock`       | body 스크롤 락 — 참조 카운팅 + `body.app-scroll-locked` 클래스 토글 (3rd-party inline overflow 와 직교)                                     |
 | `useSettingsHydrated` | 영속 store(zustand persist) 복원 완료 여부 — 기본값→복원값 전환을 감추고 싶을 때 게이트로 쓴다                                              |
+
+> **`useDismissOnBack` 은 화면이 숨겨질 때 모달을 자동으로 닫지 않는다.** `freshOnNavigation` 으로 감싼(뒤로가기에서 보존되는)
+> 화면에서는 반드시 `useResetOnHide(close)` 를 함께 걸어 직접 닫는다 (§8-2). 자동으로 닫지 않는 것은 의도다 — `onClose` 가
+> 라우팅을 하는 인터셉터일 수 있어서다.
 
 ### Components (`@/components`)
 
@@ -154,6 +161,8 @@ alias: `@/*` → `./src/*`, `#/*` → `./public/*`
 | `Skeleton`                          | `react-loading-skeleton` 얇은 래퍼                                                                                                       |
 | `ClientOnly`                        | hydration 부조화 방지 (마운트 전에는 fallback 렌더)                                                                                      |
 | `ErrorBoundary`                     | 위젯 단위 에러 폴백 (페이지 단위는 `app/.../error.tsx`)                                                                                  |
+| `freshOnNavigation(Page)`           | 탐색 page(목록·상세·검색) 래퍼 — 링크 재진입은 새로, 뒤로/앞으로만 보존 (§8)                                                             |
+| `noRoutePreserve(Page)`             | 그 외 page(거래·마이페이지·어드민·폼) 래퍼 — 보존하지 않는다(도입 전 동작). 애매하면 이것 (§8)                                           |
 | `PressFeedback`                     | 모바일 시스템 앱 스타일 눌림 피드백 (layout 마운트 완료 — 옵트아웃 `data-press-ignore`/`data-press-no-tint`, 옵트인 `data-press-target`) |
 | `CustomPointer` | iPadOS 트랙패드 스타일 커스텀 포인터. **layout 에 마운트하지 않음**(기본 커서 유지) — 쓰려면 layout 에서 마운트 |
 
@@ -264,6 +273,9 @@ import { redirect, permanentRedirect } from '@/i18n/server-navigation'; // 서�
 
 - `router.replace` 는 열린 모달의 back-stack sentinel 을 자동으로 pop 한 뒤 replace 한다.
 
+- 서버의 로케일은 `src/i18n/request.ts` 가 `next/root-params` 의 `locale()` 로 읽는다. next-intl 의 `requestLocale`(헤더 기반)로
+  되돌리지 않는다 — 되돌리면 언어 전환 링크로 이동했을 때 서버 번역 문구가 이전 로케일로 남는다 (§8-4).
+
 - 로케일 추가: `routing.ts` 의 `locales` 에 코드 추가 → `messages/<code>.json` 작성 → `messages.ts` 의 `messagesByLocale` 에 등록.
 
 ## 5. 코드 스타일
@@ -296,4 +308,49 @@ import { redirect, permanentRedirect } from '@/i18n/server-navigation'; // 서�
 8. `src/constants/cookie.constants.ts` / `route-path.constants.ts` 를 프로젝트 도메인에 맞게 채운다.
 9. `src/types/environments.d.ts` 의 `ProcessEnv` 에 새 환경 변수 타입을 등록한다.
 10. 사용하지 않는 컴포넌트 / 훅(`useGrabSlide`, `useScrollFadeIn`, `TextMotion`, `AnimatedTimer` 등) 은 폴더의 `index.ts` 에서 export 만 빼는 식으로 "비활성화" 처리하여, 보일러플레이트의 학습 자료 가치를 보존한다.
-11. 이 `AGENTS.md` 는 그대로 두고, 프로젝트 고유 규칙은 파일 끝에 `## Project-specific notes` 섹션으로 추가한다.
+11. 새 page 를 만들 때마다 §8 을 따른다 (page 감싸기, 보존 화면의 오버레이 닫기, 인증 이동은 하드 이동). 파생 프로젝트의 할 일은 [docs/cache-components-guide.md](docs/cache-components-guide.md) §8.
+12. 이 `AGENTS.md` 는 그대로 두고, 프로젝트 고유 규칙은 파일 끝에 `## Project-specific notes` 섹션으로 추가한다.
+
+## 8. Cache Components (`cacheComponents` · `partialPrefetching`)
+
+떠난 화면이 언마운트되지 않고 React `<Activity>` 로 숨겨진 채 보존된다 (최대 3개 — state·ref·DOM·스크롤이 그대로 남고, 숨김 때 effect cleanup, 재표시 때 effect 재실행).
+정책은 **"탐색 화면의 뒤로·앞으로 이동만 보존, 서버 렌더는 완전 동적"** 이다. 원리·검증 내역·함정 전체는 [docs/cache-components-guide.md](docs/cache-components-guide.md). 아래는 규칙 요약이다.
+
+### 8-1. page 감싸기
+
+- **모든 page 는 default export 를 둘 중 하나로 감싼다** (`@/components`).
+  - 탐색 화면(홈·목록·상세·검색·공지 등 읽기 화면) → `export default freshOnNavigation(Page)`. 링크·`router.push` 로 다시 들어오면 새로 시작하고 뒤로·앞으로만 보존된다.
+  - 그 외 전부(장바구니·주문서·마이페이지·어드민·로그인·폼) → `export default noRoutePreserve(Page)`. 보존하지 않는다(도입 전 동작). 화면별 초기화 코드는 필요 없다.
+  - **애매하면 `noRoutePreserve`.**
+- 감싸지 않으면 링크 재진입에서도 옛 state 가 남아 `useState(initialX)` 가 서버의 새 값을 받지 않는다 (주문서라면 고른 것과 다른 품목이 주문된다).
+- `NoRoutePreserve` 의 key(`bfcacheId` + 숨김 epoch)는 둘 다 필요하다 — 하나를 빼지 않는다. layout 에 `key={pathname}` 래퍼를 두는 방식은 쓰지 않는다(page 보다 넓게 리셋된다).
+- 빠뜨리면 ESLint `app/page-route-preserve` 가 오류로 막는다. 규칙을 끄거나 `eslint-disable` 로 넘기지 않는다.
+
+### 8-2. 보존되는 화면(`freshOnNavigation`)에서 화면을 만들 때
+
+- **`useDismissOnBack` 을 쓰는 모달·바텀시트·다이얼로그는 반드시 `useResetOnHide(close)` 로 숨김 때 닫는다.**
+  훅이 자동으로 닫지 않는다. 빠뜨리면 모달을 연 채 (모달 안 링크 등으로) 이동했다가 뒤로 돌아왔을 때 모달이 다시 열려 있고,
+  **뒤로가기가 그 모달을 닫지 못하며** 앞으로가기 기록이 잘린다. `noRoutePreserve` 화면에는 필요 없다.
+
+```text
+const { isOpen, open, close } = useDisclosure();
+useDismissOnBack(isOpen, close);
+useResetOnHide(close); // freshOnNavigation 화면에서는 필수
+```
+
+- 그 밖에 보존되면 이상한 일시 state(비밀번호 입력값, 오류 문구, 진행 플래그, 1회성 ref)도 `useResetOnHide` 로 되돌린다. 콜백은 언마운트 때도 돌므로 로컬 state·ref 만 만진다(전역 스토어·라우팅·API 호출 금지).
+- effect 는 재표시마다 다시 돈다. 진입 1회만 해야 하는 일은 ref 가드, 조회수·분석 기록은 sessionStorage dedupe.
+- `document.querySelector` / `getElementById` 는 숨겨진 화면의 사본을 잡을 수 있다 — ref 를 쓰거나 보이는 노드(`getClientRects().length > 0`)만 고른다. E2E 셀렉터도 가시성을 명시한다.
+
+### 8-3. 이동
+
+- **로그인·로그아웃·탈퇴처럼 신분이 바뀌는 이동은 `window.location.replace(getPathname({ href, locale }))`** 로 문서를 새로 연다. `router.replace` 는 이전 신분의 화면을 보존한 채 남긴다.
+
+### 8-4. 서버
+
+1. **로케일은 `next/root-params` 로 읽는다** (`src/i18n/request.ts`). URL 에 따라 달라지는 서버 출력은 `params`·`searchParams`·루트 param 에서 읽고, 미들웨어가 넘긴 헤더(경로·테넌트 등)로 가르지 않는다 — `params` 를 읽지 않는 page 의 출력은 모든 param 값이 공유한다.
+2. **route segment config `dynamic` · `revalidate` · `fetchCache` · `dynamicParams` · `runtime` 은 빌드 오류다** (`runtime = 'nodejs'` 도 안 된다). `force-dynamic` 자리는 `await connection()`. `maxDuration` 은 쓸 수 있다.
+3. **요청 데이터(세션·쿠키·헤더·`request`)를 읽지 않는 GET Route Handler 는 첫 줄에 `await connection()`** (`next/server`). 없으면 빌드 때 프리렌더되어 배포 시점 값으로 굳는다. 빌드 출력에서 API 가 `○` 가 아닌지 확인한다.
+4. **서버 컴포넌트에서 `new Date()` · `Date.now()` · `Math.random()` · `crypto.randomUUID()` 앞에는 `await connection()`.** `cookies()`·`searchParams` 뒤에 두는 것은 빌드만 통과하고 dev 에서 오류다.
+5. 루트 `[locale]/layout.tsx` 의 `export const instant = false` · `generateStaticParams`, `next.config.ts` 의 `experimental.instantInsights.validationLevel: 'manual-warning'` 을 지우지 않는다. 서버 렌더를 완전 동적으로 유지하고 dev 검증 잡음을 막는 장치다.
+6. `'use cache'` 로의 전환은 범위 밖이다. 예외는 `sitemap.ts` 의 빌드 시각 헬퍼뿐이다(도입 전처럼 정적 sitemap 을 유지하려는 것).

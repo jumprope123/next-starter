@@ -9,6 +9,7 @@ export * from './use-grab-slide';
 export * from './use-media';
 export * from './use-mounted';
 export * from './use-on-click-outside';
+export * from './use-reset-on-hide';
 export * from './use-scroll-fade-in';
 export * from './use-scroll-lock';
 export * from './use-scroll-page';
