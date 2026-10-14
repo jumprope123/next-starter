@@ -37,10 +37,15 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffec
  * - X / 오버레이 클릭 등 컴포넌트 내부 close 트리거는 평소처럼 onClose 를 직접 호출하면 되며,
  *   외부에서 props.open 이 false 로 바뀌어 cleanup 이 발화되는 시점에 sentinel entry 가 자동 정리된다.
  * - sentinel push 는 paint 전 layout 단계에서 수행되어, 자동 모달의 첫 프레임 race 를 방지한다.
+ * - **`freshOnNavigation` 으로 감싼(뒤로가기에서 보존되는) 화면에서는 `useResetOnHide(close)` 를 함께 건다.**
+ *   연 채로 떠났다가 뒤로 돌아오면 `open` 이 보존돼 다시 등록되는데, 그 핸들러는 라우트 변경 clear 에 지워져
+ *   뒤로가기가 모달을 닫지 못한다 (docs/cache-components-guide.md §5-1). 이 훅이 숨김 때 자동으로 닫지 않는 것은
+ *   의도다 — `onClose` 가 라우팅을 하는 인터셉터일 수 있어, 닫을지는 화면이 정한다 (AGENTS.md §8-2).
  *
  * @example
  * const { isOpen, open, close } = useDisclosure();
  * useDismissOnBack(isOpen, close);
+ * useResetOnHide(close); // 보존되는 화면에서만 필요
  */
 export function useDismissOnBack(
   open: boolean,

@@ -1,3 +1,4 @@
+import { freshOnNavigation } from '@/components';
 import { getServerAppTranslation } from '@/i18n/get-server-app-translation';
 import { Link } from '@/i18n/navigation';
 import { TemplatePlayground } from './_components/template-playground';
@@ -11,7 +12,7 @@ import { TemplatePlayground } from './_components/template-playground';
  *
  * 새 프로젝트 시작 시 이 파일은 그대로 교체해도 된다.
  */
-export default async function LocalizedHomePage() {
+async function LocalizedHomePage() {
   const t = await getServerAppTranslation();
 
   return (
@@ -39,3 +40,6 @@ export default async function LocalizedHomePage() {
     </main>
   );
 }
+
+// 탐색 화면 — 링크로 다시 들어오면 새로 시작하고 뒤로가기만 보존한다 (docs/cache-components-guide.md §4).
+export default freshOnNavigation(LocalizedHomePage);

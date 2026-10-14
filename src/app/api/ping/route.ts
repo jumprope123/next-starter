@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { connection, NextResponse } from 'next/server';
 
 /**
  * 헬스체크 / 부트스트랩 시연용 Route Handler.
@@ -7,6 +7,8 @@ import { NextResponse } from 'next/server';
  * 새 프로젝트에서는 자유롭게 교체하거나 제거한다.
  */
 export async function GET() {
+  // Cache Components 에서 요청 데이터를 안 읽는 GET 은 빌드 때 프리렌더된다 — 요청 시점 응답임을 못박는다.
+  await connection();
   return NextResponse.json({
     code: 200,
     message: 'ok',

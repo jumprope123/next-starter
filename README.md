@@ -114,6 +114,8 @@ public/
 | `Skeleton`                          | `react-loading-skeleton` 얇은 래퍼                      |
 | `ClientOnly`                        | hydration 부조화 방지 (마운트 전에는 fallback 렌더)     |
 | `ErrorBoundary`                     | 위젯 단위 에러 폴백 (페이지 단위는 `app/.../error.tsx`) |
+| `freshOnNavigation`                 | 탐색 page 래퍼 — 뒤로가기만 보존 (Cache Components)     |
+| `noRoutePreserve`                   | 그 외 page 래퍼 — 들어올 때마다 새로 시작               |
 
 ### Hooks (`src/hooks`)
 
@@ -134,6 +136,7 @@ public/
 | `useMounted`         | hydration 이후 마운트 여부                                 |
 | `useDebouncedValue`  | 입력 값을 디바운스해 안정적인 값 반환                      |
 | `useCopyToClipboard` | 복사 + `isCopied` 피드백 상태                              |
+| `useResetOnHide`     | 보존되는 화면이 숨겨질 때 일시 state 되돌리기              |
 
 ### Utils (`src/utils`)
 
@@ -230,7 +233,8 @@ public/
 ## 설정 / 도구
 
 - **Next.js** (`next.config.ts`)
-  - `experimental.scrollRestoration: true`
+  - `cacheComponents: true`, `partialPrefetching: true` — 떠난 화면을 숨겨 보존한다. 규칙은 [docs/cache-components-guide.md](docs/cache-components-guide.md)
+  - `experimental.scrollRestoration: true`, `experimental.hideLogsAfterAbort: true`, `experimental.instantInsights.validationLevel: 'manual-warning'`
   - `reactCompiler: true`
   - `images.formats: ['image/avif', 'image/webp']`, `images.qualities: [5..100]` 단계
   - `compiler.removeConsole`: production 빌드에서 `console.*` 제거 (`console.error` 만 보존)
@@ -241,6 +245,7 @@ public/
 - **ESLint** (`eslint.config.mjs`)
   - `eslint-config-next/core-web-vitals` + `eslint-config-next/typescript`
   - `no-console: warn` (의도적 호출은 disable 주석으로 명시)
+  - `app/page-route-preserve: error` — `page.tsx` 의 default export 는 `freshOnNavigation` / `noRoutePreserve` 로 감싼다
 - **Prettier** (`prettier.config.mjs`)
   - `printWidth: 120`, `singleQuote: true`, `trailingComma: 'es5'`, `endOfLine: 'lf'`, `semi: true`
   - `prettier-plugin-tailwindcss` 활성화 (`cn`, `clsx`, `tw`, `twMerge`, `cva` 인식, `tailwindStylesheet: ./src/styles/globals.css`)
@@ -283,7 +288,8 @@ NEXT_PUBLIC_SITE_URL=https://www.example.com
 9. `src/types/environments.d.ts` 의 `ProcessEnv` 에 새 환경 변수 타입을 등록한다.
 10. `src/app/[locale]/error.tsx` / `not-found.tsx` / `loading.tsx` 의 디자인을 디자인 시스템에 맞게 다듬는다.
 11. 사용하지 않는 컴포넌트 / 훅(`useGrabSlide`, `useScrollFadeIn`, `TextMotion`, `AnimatedTimer` 등) 은 폴더의 `index.ts` 에서 export 만 빼는 식으로 "비활성화" 처리하여 보일러플레이트의 학습 자료 가치를 보존하는 것을 권장한다.
-12. `AGENTS.md` / `CLAUDE.md` 는 그대로 두고, 프로젝트 고유 규칙은 파일 끝에 `## Project-specific notes` 섹션으로 추가한다.
+12. 새 page 는 `freshOnNavigation` / `noRoutePreserve` 로 감싸고, 인증·API 를 붙일 때 [docs/cache-components-guide.md](docs/cache-components-guide.md) §8 을 따른다.
+13. `AGENTS.md` / `CLAUDE.md` 는 그대로 두고, 프로젝트 고유 규칙은 파일 끝에 `## Project-specific notes` 섹션으로 추가한다.
 
 ---
 

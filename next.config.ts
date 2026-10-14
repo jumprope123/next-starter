@@ -6,8 +6,17 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig = {
+  // 라우트 보존(<Activity>) + 정적 셸 모델. 규칙·원리·함정은 docs/cache-components-guide.md.
+  cacheComponents: true,
+  partialPrefetching: true,
   experimental: {
     scrollRestoration: true,
+    // GET 핸들러의 try/catch 가 프리렌더 이탈 예외를 잡아 찍는 로그를 빌드 출력에서 숨긴다.
+    hideLogsAfterAbort: true,
+    // 서버 렌더를 완전 동적으로 두는 정책이라, dev 의 instant 검증은 `instant` 를 명시한 세그먼트에만 건다.
+    // 기본값('warning')은 루트 layout 의 `instant = false` 와 무관하게 모든 page 를 검증해,
+    // Suspense 밖에서 캐시 없는 fetch·`connection()` 을 쓰는 page 마다 dev 오류를 띄운다.
+    instantInsights: { validationLevel: 'manual-warning' },
   },
   reactCompiler: true,
   poweredByHeader: false,
