@@ -7,7 +7,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import '@/styles/globals.css';
 import { getCookieAction } from '@/actions';
-import { MobileDetector, Polyfill, PressFeedback } from '@/components';
+import { BfcacheReload, MobileDetector, Polyfill, PressFeedback } from '@/components';
 import { CookieName } from '@/constants';
 import { BackButtonHandler } from '@/core';
 import { getAppMessages, type Locale } from '@/i18n/messages';
@@ -101,6 +101,8 @@ export default async function LocaleLayout({ children, params }: Readonly<Layout
 
             {/* 브라우저/하드웨어 back 을 back-stack 에 연결 — 뒤로가기로 모달·바텀시트 닫기. */}
             <BackButtonHandler />
+            {/* 브라우저가 보관해 둔 문서로 돌아오면 새로 받는다 — 옛 신분 · 상태의 화면이 되살아나지 않게(Cache Components · 가이드 §7-1). */}
+            <BfcacheReload />
             {/* 터치/클릭한 요소를 살짝 안으로 눌러 넣는 모바일 시스템 앱 스타일 눌림 피드백.
                 네이티브 탭 하이라이트(-webkit-tap-highlight-color)를 지운 자리를 메운다. */}
             <PressFeedback />

@@ -297,6 +297,14 @@ window.location.replace(getPathname({ href: '/login', locale }));
 
 **확인하지 못한 것:** 앱(WebView) 실기기 — 안드로이드 하드웨어 뒤로가기(`consumeBack` 브릿지), iOS 스와이프 백, 메모리. Vercel 배포 환경의 응답 헤더. 화면이 4개 이상 쌓여 가장 오래된 화면이 버려지는 경우.
 
+
+### 7-1. 도입 뒤 후속 수정 (2026-10-14)
+
+파생 프로젝트들(아나나몰 · 남대문리뷰 등)의 운영 배포와 react-user-web 원본의 2·3차 점검(`b5a9adf1c` · `a8984e4a3`)에서 나온 것 가운데 템플릿에 해당하는 것을 넣었다.
+
+- **bfcache 되살림** — 도입 전 HTML 은 `private, no-cache, no-store` 였는데 도입 뒤 Vercel 이 `public, max-age=0, must-revalidate` 로 내보낸다(파생 프로젝트 운영 실측). 크롬이 떠난 문서를 통째로 보관했다 뒤로가기에 되살린다 — 아나나몰 운영에서 외부 사이트로 갔다 뒤로 오자 `pageshow` 의 `persisted === true`, 페이지 JS 변수까지 그대로였다. 로그인 · 가입 · 탈퇴 같은 문서 이동 뒤 옛 신분 · 상태의 화면이 뜨지 않도록, 되살린 경우에만 다시 받는 `BfcacheReload`(`src/components/bfcache-reload.tsx`)를 루트 layout 에 뒀다. 로컬 `next start` 는 no-store 라 재현되지 않는다 — `pageshow` 에 `persisted: true` 이벤트를 직접 보내 reload 되는지로 확인했다.
+- **서버 시간** — `useServerNow` 가 오차를 effect 실행 시점의 `Date.now()` 로 계산해, 숨겨졌다 다시 보인 화면에서 effect 가 몇 분 전에 받은 서버 시간으로 다시 돌아 시계 · 카운트다운이 재요청 응답 전까지 숨겨진 시간만큼 되감겼다(원본에서 실측). 받은 시점(`dataUpdatedAt`) 기준으로 바꿨다.
+- 원본의 나머지(같은 경로 쿼리 이동의 `useState(initial)` 입력, 재표시 때 새로 만들어지는 Swiper · 지도, 재표시 commit 의 back 핸들러 등)는 템플릿에 해당 화면이 없거나 §5-1 로 이미 막았다. 파생 프로젝트에서 그런 화면을 만들면 §10 함정 18~19 를 본다.
 ---
 
 ## 8. 파생 프로젝트에서 해야 할 일
@@ -343,6 +351,8 @@ window.location.replace(getPathname({ href: '/login', locale }));
 15. **루트 layout 의 `instant = false` 는 dev 의 page 검증을 끄지 않는다.** `validationLevel: 'manual-warning'` 이 그 역할이다(§3-5).
 16. **`params` 를 읽지 않는 page 의 서버 출력은 모든 param 값이 공유한다.** 헤더·미들웨어로 넘긴 값으로 URL 별 내용을 가르면 다른 URL 의 내용이 나온다. 로케일은 `next/root-params` 로 읽는다(§3-7).
 17. **`next dev` 가 `AGENTS.md` 맨 위의 `nextjs-agent-rules` 블록을 다시 쓴다.** 작업과 무관한 diff 다. 끄려면 `next.config.ts` 에 `agentRules: false`.
+18. **HTML 이 더는 `no-store` 가 아니다.** 브라우저가 떠난 문서를 bfcache 에 보관해 뒤로가기에 되살린다 — `BfcacheReload` 를 루트 layout 에서 빼지 않는다(§7-1).
+19. **effect 에서 "받은 값 + 지금 시각"으로 계산하면 재표시 때 옛 값으로 다시 계산된다.** 받은 시점을 함께 저장해 계산한다(`useServerNow`, §7-1). 같은 경로에서 쿼리만 바뀌는 이동은 다시 마운트되지 않으니, 쿼리 값으로 `useState` 를 초기화한 입력은 `key` 를 쿼리 값으로 준다.
 
 ---
 

@@ -24,7 +24,7 @@ type Props = {
 export function useServerNow(props?: Props) {
   const { autoUpdate = true } = { ...props };
   const [now, setNow] = useState<number>();
-  const { data, isLoading, isFetching, refetch, error } = useQuery({
+  const { data, dataUpdatedAt, isLoading, isFetching, refetch, error } = useQuery({
     ...queries.serverTime.now(),
     refetchOnWindowFocus: false,
   });
@@ -32,8 +32,12 @@ export function useServerNow(props?: Props) {
   useEffect(() => {
     if (!data) return;
 
-    /** 로컬 시간과 오차 계산 */
-    const offset = data - Date.now();
+    /**
+     * 로컬 시간과 오차 계산 — 서버 시간을 **받은 시점**(`dataUpdatedAt`) 기준.
+     * effect 실행 시점(`Date.now()`)으로 계산하면, 숨겨졌다 다시 보인 화면(Cache Components)에서
+     * effect 가 몇 분 전에 받은 서버 시간으로 다시 돌아 시계가 숨겨진 시간만큼 되감긴다.
+     */
+    const offset = data - dataUpdatedAt;
 
     /** 현재 서버시간 계산 */
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -47,7 +51,7 @@ export function useServerNow(props?: Props) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [data, autoUpdate]);
+  }, [data, dataUpdatedAt, autoUpdate]);
 
   return { data, now, isLoading, isFetching, refetch, error };
 }
